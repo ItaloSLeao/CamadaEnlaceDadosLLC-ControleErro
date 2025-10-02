@@ -1,0 +1,90 @@
+/*Manipula os componentes de estilizacao da combo box de telaPrincipal.fxml*/
+.combo-box {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8px;
+    -fx-border-color: #272f38;
+    -fx-border-width: 3px;
+    -fx-border-radius: 8px;
+    -fx-padding: 0;
+} /*Fim de .combo-box*/
+
+/*Manipula os componentes de estilizacao da seta da combo box*/
+.combo-box .arrow {
+    -fx-background-color: white;
+} /*Fim de .arrow*/
+
+.combo-box .arrow-button {
+    -fx-background-color: rgba(0, 128, 255, 0.2); /* azul translucido */
+    -fx-background-radius: 0 7px 7px 0;
+    -fx-padding: 0.333em 0.5em 0.333em 0.5em;
+} /*Fim de .arrow-button*/
+
+/*Manipula os componentes de estilizacao da celula escolhida da combo box*/
+.combo-box > .list-cell {
+    -fx-background-color: rgba(0, 128, 255, 0.2) !important; /* azul meio transparente */
+    -fx-background-radius: 7px 0 0 7px;
+    -fx-padding: 0.333em 0.667em 0.333em 0.667em;
+    -fx-text-fill: white;
+    -fx-font-family: "DejaVu Sans Bold";
+} /*Fim de > .list-cell*/
+
+/*Manipula os componentes de estilizacao da lista suspensa da combo box*/
+.combo-box .list-cell {
+    -fx-font-family: "DejaVu Sans Bold";
+    -fx-font-size: 14px;
+    -fx-text-fill: black;
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+} /*Fim de .list-cell*/
+
+.combo-box .list-cell:filled:hover {
+    -fx-background-color: #b3d9ff;
+    -fx-text-fill: black;
+} /*Fim de .list-cell:hover*/
+
+.combo-box .list-cell:filled:selected,
+.combo-box .list-cell:filled:selected:hover {
+    -fx-background-color: #0066cc;
+    -fx-text-fill: white;
+} /*Fim de .list-cell:selected*/
+
+
+
+/* --- O Painel Principal do Dialogo --- */
+.dialog-pane {
+    -fx-background-color:
+        linear-gradient(from 0% 0% to 0% 100%,
+                        rgba(255, 255, 255, 1),
+                        rgba(220, 235, 250, 0.9));
+    -fx-effect: dropshadow(gaussian, rgba(120, 180, 255, 0.6), 25, 0, 0, 0);
+}
+
+/* Texto do conteudo principal */
+.dialog-pane .content.label {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #000000;
+}
+
+/* --- Os Botoes do Dialogo --- */
+.dialog-pane .button {
+    -fx-background-color:
+        linear-gradient(from 0% 0% to 0% 100%,
+                        rgba(255, 255, 255, 1),
+                        rgba(220, 235, 250, 0.9));
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-border-color: rgba(0, 0, 0, 0.8);
+    -fx-border-width: 1px;
+    -fx-text-fill: #000000;
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-font-weight: bold;
+    -fx-padding: 5px 15px;
+}
+
+/* Efeito ao passar o mouse sobre o botao */
+.dialog-pane .button:hover {
+    -fx-cursor: hand;
+}
