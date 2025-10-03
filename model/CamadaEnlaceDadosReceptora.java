@@ -32,14 +32,14 @@ public class CamadaEnlaceDadosReceptora {
 
     /*Tratamento de uma excecao previsivel durante uma transmissao usando o enquadramento 
     * de contagem de caracteres. A randomicidade de erros gerada no meio pode alterar um
-    * caracter de contagem, corrompendo o desenquadramento*/
+    * caracter de contagem, corromper o desenquadramento e esse erro nao ser detectado*/
     try{
 
       System.out.println("\nCAMADA DE ENLACE DE DADOS RECEPTORA ------------------\n");
 
       int[] quadroControleErros;
 
-      // Faz o controle pre-enquadramento para todas as opcoes, que nao a violacao da c. fisica
+      //Faz o controle pre-enquadramento para todas as opcoes, que nao a violacao da c. fisica
       if (controller.getEnquadramento() != 4) {
         quadroControleErros = camadaEnlaceDadosReceptoraControleDeErros(quadro, controller);
 
@@ -56,10 +56,10 @@ public class CamadaEnlaceDadosReceptora {
             alert.setContentText("A Camada de Enlace de Dados Receptora detectou um erro de transmissao!");
             alert.showAndWait();
 
-            controller.reativar(); // Reativa o menu da aplicacao
+            controller.reativar(); //Reativa o menu da aplicacao
           });
 
-          return; // Quebra a transmissao
+          return; //Quebra a transmissao
         }
 
       } else {
@@ -85,9 +85,9 @@ public class CamadaEnlaceDadosReceptora {
 
     } //Fim try-catch
 
-    
-
   } //Fim camadaEnlaceDadosReceptora
+
+
 
   /**
    * Seleciona e executa o algoritmo de desenquadramento apropriado.
@@ -329,6 +329,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim camadaEnlaceDadosReceptoraEnquadramentoViolacaoCamadaFisica
 
 
+  
   private static int[] camadaEnlaceDadosReceptoraControleDeErros(int quadro[], ControllerTelaPrincipal controller){
 
     int tipoControleErros = controller.getControleErro();
@@ -394,7 +395,31 @@ public class CamadaEnlaceDadosReceptora {
 
 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosBitParidadeImpar(int[] quadro){
-    return new int[0];
+    
+    int paridade = 0;
+    //Calcula a paridade byte por byte, bit por bit, ate o penultimo
+    for (int i = 0; i < quadro.length - 1; i++) {
+      int caractere = quadro[i];
+      for (int j = 0; j < 8; j++) {
+        if (((caractere >> j) & 1) == 1) {
+          paridade++;
+        } //Fim if
+      } //Fim for
+    } //Fim for
+
+    int bitParidadeRecebido = quadro[quadro.length - 1];
+    int bitParidadeEsperado = (paridade % 2 == 0) ? 1 : 0; //Se paridade par, 1, se nao, 0
+
+    if (bitParidadeRecebido != bitParidadeEsperado) {
+      return null; //Erro detectado
+    }
+
+    //Retorna o quadro original sem o bit de paridade
+    int[] quadroOriginal = new int[quadro.length - 1];
+    System.arraycopy(quadro, 0, quadroOriginal, 0, quadroOriginal.length);
+
+    return quadroOriginal;
+
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosBitParidadeImpar
 
 

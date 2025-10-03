@@ -40,6 +40,7 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissora
 
 
+
   /**
    * Enquadra os quadros de caracteres recebidos da camada de aplicacao, conforme
    * o enquadramento escolhido na GUI.
@@ -308,6 +309,7 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraEnquadramentoViolacaoCamadaFisica
 
 
+  
   /**
    * Realiza o controle de erros com os quadros de caracteres enquadrados recebidos,
    * conforme a escolha na GUI.
@@ -379,7 +381,23 @@ public class CamadaEnlaceDadosTransmissora {
 
 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar(int[] quadro){
-    return new int[0];
+    
+    int paridade = 0;
+
+    for (int caractere : quadro) {
+        for (int i = 0; i < 8; i++) { 
+          if (((caractere >> i) & 1) == 1) {
+            paridade++;
+          } //Fim if
+        } //Fim for
+    } //Fim for quadro
+
+    int[] quadroComParidade = new int[quadro.length + 1];
+    System.arraycopy(quadro, 0, quadroComParidade, 0, quadro.length);
+    quadroComParidade[quadro.length] = (paridade % 2 == 0) ? 1 : 0; //Insere o bit de paridade impar
+    
+    return quadroComParidade;
+
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar
 
 
