@@ -95,7 +95,7 @@ public class MeioDeComunicacao {
 
     if(erro){ //Se acontecer um erro, ativa um painel de alerta
       Platform.runLater(() -> {
-        Alert alert = new Alert(AlertType.ERROR);
+        Alert alert = new Alert(AlertType.WARNING);
   
         alert.getDialogPane().getStylesheets().add(
           CamadaEnlaceDadosReceptora.class.getResource("/view/styles.css").toExternalForm());
@@ -103,7 +103,7 @@ public class MeioDeComunicacao {
   
         alert.setTitle("ERRO");
         alert.setHeaderText(null);
-        alert.setContentText("Foi detectado um Erro de Transmissao\nno Meio de Comunicacao");
+        alert.setContentText("Um erro ocorreu no Meio de Comunicacao!");
         alert.showAndWait();
       });
     } //Fim if erro

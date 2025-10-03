@@ -28,6 +28,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param controller Controlador da interface grafica para interacoes com a UI.
    */
   protected static void camadaEnlaceDadosTransmissora(int quadro[], ControllerTelaPrincipal controller) {
+
     System.out.println("\nCAMADA DE ENLACE DE DADOS TRANSMISSORA--------------\n");
 
     int[] quadroEnquadrado = camadaEnlaceDadosTransmissoraEnquadramento(quadro, controller);
@@ -35,6 +36,7 @@ public class CamadaEnlaceDadosTransmissora {
     int[] quadroControleErro = camadaEnlaceDadosTransmissoraControleDeErros(quadroEnquadrado, controller);
 
     CamadaFisicaTransmissora.camadaFisicaTransmissora(quadroControleErro, controller);
+
   } //Fim camadaEnlaceDadosTransmissora
 
 
@@ -46,7 +48,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param controller Controlador da interface grafica.
    * @return int[] O resultado do enquadramento.
    */
-  protected static int[] camadaEnlaceDadosTransmissoraEnquadramento(int quadro[], ControllerTelaPrincipal controller) {
+  private static int[] camadaEnlaceDadosTransmissoraEnquadramento(int quadro[], ControllerTelaPrincipal controller) {
 
     int tipoEnquadramento = controller.getEnquadramento(); //Captura o enquadramento escolhido
     int[] quadroEnquadrado;
@@ -100,7 +102,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param quadro Array de inteiros com os codigos ascii dos caracteres.
    * @return int[] O resultado do enquadramento de contagem de caracteres.
    */
-  protected static int[] camadaEnlaceDadosTransmissoraEnquadramentoContagemDeCaracteres(int quadro[]) {
+  private static int[] camadaEnlaceDadosTransmissoraEnquadramentoContagemDeCaracteres(int quadro[]) {
 
     /* O tamanho do quadro de caracteres eh ajustado para 3. Isso eh justificavel,
      * haja vista que na camada fisica cada inteiro de quadro[] contera 4 bytes (1 byte de controle + 3 de carga util) */
@@ -142,7 +144,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param quadro Array de inteiros com os codigos ascii dos caracteres.
    * @return int[] O resultado do enquadramento por insercao de bytes.
    */
-  protected static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBytes(int quadro[]) {
+  private static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBytes(int quadro[]) {
 
     final int TAMANHO_CARGA_UTIL = 5; //Numero fixo maximo de caracteres por quadro de carga util
     final char FLAG = 'i';
@@ -204,7 +206,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param quadro Array de inteiros com os codigos ascii dos caracteres.
    * @return int[] O resultado do enquadramento por insercao de bits.
    */
-  protected static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBits(int quadro[]) {
+  private static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBits(int quadro[]) {
 
     final int FLAG = 0b01111110; //01111110
     final int TAMANHO_CARGA_UTIL = 5; //Maximo de 5 bytes de dados por quadro
@@ -301,7 +303,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param quadro Vetor de inteiros contendo os caracteres da mensagem.
    * @return int[] O proprio vetor quadro[].
    */
-  protected static int[] camadaEnlaceDadosTransmissoraEnquadramentoViolacaoCamadaFisica(int quadro[]) {
+  private static int[] camadaEnlaceDadosTransmissoraEnquadramentoViolacaoCamadaFisica(int quadro[]) {
     return quadro;
   } //Fim camadaEnlaceDadosTransmissoraEnquadramentoViolacaoCamadaFisica
 
@@ -314,7 +316,7 @@ public class CamadaEnlaceDadosTransmissora {
    * @param controller Controlador da interface grafica.
    * @return int[] O resultado do enquadramento.
    */
-  protected static int[] camadaEnlaceDadosTransmissoraControleDeErros(int quadro[], ControllerTelaPrincipal controller) {
+  private static int[] camadaEnlaceDadosTransmissoraControleDeErros(int quadro[], ControllerTelaPrincipal controller) {
 
     int tipoControleErros = controller.getControleErro(); //Captura o controle de erros escolhido
     int[] quadroControleErros;
@@ -355,28 +357,44 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraControleDeErros
 
 
-  protected static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadePar(int[] quadro){
-    return new int[0];
+  private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadePar(int[] quadro){
+
+    int paridade = 0;
+
+    for (int caractere : quadro) { //Para cada caractere em quadro
+        for (int i = 0; i < 8; i++) { //Para cada bit
+          if (((caractere >> i) & 1) == 1) { //Se o bit for 1
+            paridade++; //Adiciona
+          } //Fim if
+        } //Fim for
+    } //Fim for quadro
+
+    int[] quadroComParidade = new int[quadro.length + 1];
+    System.arraycopy(quadro, 0, quadroComParidade, 0, quadro.length);
+    quadroComParidade[quadro.length] = (paridade % 2 == 0) ? 0 : 1; //Insere o bit de paridade par
+    
+    return quadroComParidade;
+
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosBitParidadePar
 
 
-  protected static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar(int[] quadro){
+  private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar(int[] quadro){
     return new int[0];
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar
 
 
-  protected static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
+  private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
     return new int[0];
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCRC
   
-  
-  protected static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
+
+  private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
     return new int[0];
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming
 
 
   
-  protected static void camadaEnlaceDadosTransmissoraControleDeFluxo(int quadro[]) {
+  private static void camadaEnlaceDadosTransmissoraControleDeFluxo(int quadro[]) {
   } //Fim camadaEnlaceDadosTransmissoraControleDeFluxo
 
 } //Fim da classe CamadaEnlaceDadosTransmissora

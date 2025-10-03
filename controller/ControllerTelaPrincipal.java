@@ -112,10 +112,10 @@ public class ControllerTelaPrincipal implements Initializable {
 
     botaoEnviar.setOnAction(event -> {
 
-      if(msgEnviadaTextArea.getText().equals("")){ //Se o campo de texto de envio estiver vazio
+      if(msgEnviadaTextArea.getText().isEmpty()){ //Se o campo de texto de envio estiver vazio
 
         //Cria e exibe um painel de alerta
-        Alert alert = new Alert(AlertType.WARNING);
+        Alert alert = new Alert(AlertType.INFORMATION);
         alert.getDialogPane().getStylesheets().add(
           ControllerTelaPrincipal.class.getResource("/view/styles.css").toExternalForm());
         alert.getDialogPane().getStyleClass().add("dialog-pane");
@@ -127,7 +127,7 @@ public class ControllerTelaPrincipal implements Initializable {
       } else{
 
         if (getCodificacao() == 1 && getEnquadramento() == 4) { //Se as escolhas forem V. Camada Fisica e Cod. Binaria
-          Alert alert = new Alert(AlertType.WARNING);
+          Alert alert = new Alert(AlertType.INFORMATION);
           alert.getDialogPane().getStylesheets().add(
             ControllerTelaPrincipal.class.getResource("/view/styles.css").toExternalForm());
           alert.getDialogPane().getStyleClass().add("dialog-pane");
@@ -141,6 +141,7 @@ public class ControllerTelaPrincipal implements Initializable {
           comboBoxCodificacao.setDisable(true);
           comboBoxEnquadramento.setDisable(true);
           comboBoxErro.setDisable(true);
+          comboBoxControleErro.setDisable(true);
           limparTextArea();
           AplicacaoTransmissora.aplicacaoTransmissora(this);
         } //Fim if-else
@@ -179,6 +180,7 @@ public class ControllerTelaPrincipal implements Initializable {
       comboBoxCodificacao.setDisable(false);
       comboBoxEnquadramento.setDisable(false);
       comboBoxErro.setDisable(false);
+      comboBoxControleErro.setDisable(false);
     }); //Fim runLater
   } //Fim reativar
 
