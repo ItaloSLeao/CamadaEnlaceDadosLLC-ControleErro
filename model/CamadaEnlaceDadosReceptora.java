@@ -1,5 +1,6 @@
 package model;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 
 import controller.ControllerTelaPrincipal;
@@ -37,8 +38,30 @@ public class CamadaEnlaceDadosReceptora {
 
       System.out.println("\nCAMADA DE ENLACE DE DADOS RECEPTORA ------------------\n");
 
-      int[] quadroControleErros;
+      int[] quadroControleErros = camadaEnlaceDadosReceptoraControleDeErros(quadro, controller);
 
+      if (quadroControleErros == null) {
+        Platform.runLater(() -> {
+          Alert alert = new Alert(AlertType.ERROR);
+
+          alert.getDialogPane().getStylesheets().add(
+            CamadaEnlaceDadosReceptora.class.getResource("/view/styles.css").toExternalForm());
+          alert.getDialogPane().getStyleClass().add("dialog-pane");
+
+          alert.setTitle("ERRO DETECTADO");
+          alert.setHeaderText(null);
+          alert.setContentText("A Camada de Enlace de Dados Receptora detectou um erro de transmissao!");
+          alert.showAndWait();
+
+          controller.reativar(); //Reativa o menu da aplicacao
+        });
+
+        return; //Quebra a transmissao
+      }
+
+      int[] quadroDesenquadrado = camadaEnlaceDadosReceptoraEnquadramento(quadroControleErros, controller);
+
+      /*
       //Faz o controle pre-enquadramento para todas as opcoes, que nao a violacao da c. fisica
       if (controller.getEnquadramento() != 4) {
         quadroControleErros = camadaEnlaceDadosReceptoraControleDeErros(quadro, controller);
@@ -64,13 +87,12 @@ public class CamadaEnlaceDadosReceptora {
 
       } else {
         quadroControleErros = quadro;
-      }
+      }*/
 
       System.out.println("\n");
 
-      int[] quadroEnquadrado = camadaEnlaceDadosReceptoraEnquadramento(quadroControleErros, controller);
 
-      CamadaAplicacaoReceptora.camadaAplicacaoReceptora(quadroEnquadrado, controller);
+      CamadaAplicacaoReceptora.camadaAplicacaoReceptora(quadroDesenquadrado, controller);
 
     } catch(Exception e){
 
@@ -424,7 +446,56 @@ public class CamadaEnlaceDadosReceptora {
 
 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
-    return new int[0];
+    
+    // Mesmo polinômio do transmissor
+    long polinomio = 0x04C11DB7L;
+    
+    // 1. Juntar todos os bytes (dados + CRC) em um único BigInteger
+    BigInteger dadosComCRC = BigInteger.ZERO;
+    for (int i = 0; i < quadro.length; i++) {
+        dadosComCRC = dadosComCRC.shiftLeft(8);
+        dadosComCRC = dadosComCRC.or(BigInteger.valueOf(quadro[i] & 0xFF));
+    }
+    
+    // 2. Anexar 32 bits zero (deslocar 32 posições para esquerda)
+    BigInteger dadosComZeros = dadosComCRC.shiftLeft(32);
+    
+    // 3. Fazer a divisão polinomial (XOR) bit a bit
+    int bitLength = dadosComZeros.bitLength();
+    if (bitLength == 0) bitLength = 1;
+    
+    BigInteger resto = BigInteger.ZERO;
+    
+    for (int i = bitLength - 1; i >= 0; i--) {
+        resto = resto.shiftLeft(1);
+        
+        if (dadosComZeros.testBit(i)) {
+            resto = resto.setBit(0);
+        }
+        
+        if (resto.bitLength() == 33 && resto.testBit(32)) {
+            resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
+        }
+    }
+    
+    // 4. Verificar se o resto é zero
+    resto = resto.and(BigInteger.valueOf(0xFFFFFFFFL));
+    
+    if (resto.equals(BigInteger.ZERO)) {
+        // CRC válido - remover os 4 bytes do CRC
+        int tamanhoOriginal = quadro.length - 4;
+        if (tamanhoOriginal < 0) {
+            return null;
+        }
+        
+        int[] quadroOriginal = new int[tamanhoOriginal];
+        System.arraycopy(quadro, 0, quadroOriginal, 0, tamanhoOriginal);
+        return quadroOriginal;
+    } else {
+        // Erro detectado
+        return null;
+    }
+
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCRC
   
   

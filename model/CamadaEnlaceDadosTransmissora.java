@@ -1,5 +1,6 @@
 package model;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -402,7 +403,59 @@ public class CamadaEnlaceDadosTransmissora {
 
 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
-    return new int[0];
+    
+    // Polinômio CRC-32: 0x04C11DB7 (formato normal)
+    // Em binário: 100000100110000010001110110110111
+    long polinomio = 0x04C11DB7L;
+    
+    // 1. Juntar todos os bytes em um único BigInteger
+    BigInteger dados = BigInteger.ZERO;
+    for (int i = 0; i < quadro.length; i++) {
+        dados = dados.shiftLeft(8);
+        dados = dados.or(BigInteger.valueOf(quadro[i] & 0xFF));
+    }
+    
+    // 2. Anexar 32 bits zero (deslocar 32 posições para esquerda)
+    BigInteger dadosComZeros = dados.shiftLeft(32);
+    
+    // 3. Converter para array de bits para fazer a divisão polinomial
+    int bitLength = dadosComZeros.bitLength();
+    if (bitLength == 0) bitLength = 1; // Evitar bitLength 0
+    
+    // 4. Fazer a divisão polinomial (XOR) bit a bit
+    BigInteger resto = BigInteger.ZERO;
+    
+    for (int i = bitLength - 1; i >= 0; i--) {
+        // Deslocar o resto para esquerda
+        resto = resto.shiftLeft(1);
+        
+        // Pegar o próximo bit dos dados
+        if (dadosComZeros.testBit(i)) {
+            resto = resto.setBit(0);
+        }
+        
+        // Se o bit mais significativo do resto estiver setado, fazer XOR com polinômio
+        if (resto.bitLength() == 33 && resto.testBit(32)) {
+            resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
+        }
+    }
+    
+    // 5. O resto tem no máximo 32 bits - garantir isso
+    resto = resto.and(BigInteger.valueOf(0xFFFFFFFFL));
+    
+    // 6. Criar novo quadro com dados + CRC
+    int[] quadroComCRC = new int[quadro.length + 4];
+    System.arraycopy(quadro, 0, quadroComCRC, 0, quadro.length);
+    
+    // 7. Adicionar os 4 bytes do CRC em ordem big-endian
+    long restoLong = resto.longValue();
+    quadroComCRC[quadro.length] = (int) ((restoLong >> 24) & 0xFF);
+    quadroComCRC[quadro.length + 1] = (int) ((restoLong >> 16) & 0xFF);
+    quadroComCRC[quadro.length + 2] = (int) ((restoLong >> 8) & 0xFF);
+    quadroComCRC[quadro.length + 3] = (int) (restoLong & 0xFF);
+    
+    return quadroComCRC;
+    
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCRC
   
 

@@ -89,14 +89,15 @@ public class CamadaFisicaTransmissora {
 
     int tamanho = (quadro.length - 1) / 4 + 1; //Calcula o tamanho necessario para o array de bits codificados
     int codificado[] = new int[tamanho];
-    int informacao; //Variavel inteira que vai empacotar os 32 bits
 
     for (int i = 0; i < codificado.length; i++) { //Laco para gerar cada bloco codificado
-      informacao = quadro[i * 4]; //Armazena de 4 em 4
+      int informacao = 0; //Variavel inteira que vai empacotar os 32 bits
 
-      if (i * 4 + 1 < quadro.length) {informacao |= (quadro[i * 4 + 1] << 8);} //Segundos 8 bits (posicoes 8-15)
-      if (i * 4 + 2 < quadro.length) {informacao |= (quadro[i * 4 + 2] << 16);} //Terceiros 8 bits (posicoes 16-23)
-      if (i * 4 + 3 < quadro.length) {informacao |= (quadro[i * 4 + 3] << 24);} //Quartos 8 bits (posicoes 24-31)
+      informacao |= quadro[i * 4] << 24; //Armazena de 4 em 4
+
+      if (i * 4 + 1 < quadro.length) {informacao |= (quadro[i * 4 + 1] << 16);} //Segundos 8 bits (posicoes 23-16)
+      if (i * 4 + 2 < quadro.length) {informacao |= (quadro[i * 4 + 2] << 8);} //Terceiros 8 bits (posicoes 15-8)
+      if (i * 4 + 3 < quadro.length) {informacao |= (quadro[i * 4 + 3]);} //Quartos 8 bits (posicoes 7-0)
       
       codificado[i] = informacao; //Armazena os bits acumulados de 4 caracteres no vetor
 
@@ -122,29 +123,26 @@ public class CamadaFisicaTransmissora {
    */
   protected static int[] camadaFisicaTransmissoraCodificacaoManchester(int quadro[], ControllerTelaPrincipal controller) {
 
-    int tamanho = (quadro.length - 1) / 2 + 1;
+    int tamanho = (quadro.length + 1) / 2;
     int codificado[] = new int[tamanho];
     int informacao;
-    int bit; //Mascara de bit usada para isolar um bit de cada vez do caractere original
 
     for (int i = 0; i < tamanho; i++) { //Laco para processar os caracteres de entrada em pares
       informacao = 0; //A variavel eh zerada para ser preenchida
-      bit = 1; //Reinicia a mascara para 1, para comecar a ler o caractere pelo seu primeiro bit
 
-      //Laco que ira iterar sobre os 8 bits do primeiro caractere do par envolvido (2 caracteres por bloco de 32 bits)
-      for (int j = 0; j < 8; j++) {
+      //Laco que ira iterar sobre os 8 bits do primeiro caractere do par envolvido
+      for (int j = 7; j >= 0; j--) {
         //Manchester codifica cada bit como 0 -> 01 e 1 -> 10
-        informacao |= ((((quadro[i * 2] & bit) ^ 0) != 0) ? 1 : 0) << (j * 2);
-        informacao |= ((((quadro[i * 2] & bit) ^ bit) != 0) ? 1 : 0) << (j * 2 + 1);
-        bit <<= 1; //Desloca a mascara um bit a esquerda, para ler o proximo bit do caractere
+        int bit = (quadro[i*2] >> j) & 1;
+        int par = (bit == 1) ? 0b10 : 0b01;
+        informacao = (informacao << 2) | par;
       } //Fim for
 
-      bit = 1; //Reinicia a mascara de bit para ler o segundo caractere, caso exista
       if (i * 2 + 1 < quadro.length) { //Verifica se ha proximo caractere para leitura
-        for (int j = 0; j < 8; j++) {
-          informacao |= ((((quadro[i * 2 + 1] & bit) ^ 0) != 0) ? 1 : 0) << (j * 2 + 16);
-          informacao |= ((((quadro[i * 2 + 1] & bit) ^ bit) != 0) ? 1 : 0) << (j * 2 + 1 + 16);
-          bit <<= 1;
+        for (int j = 7; j >= 0; j--) {
+          int bit = (quadro[i*2 + 1] >> j) & 1;
+          int par = (bit == 1) ? 0b10 : 0b01;
+          informacao = (informacao << 2) | par;
         } //Fim for
       } //Fim if
 
@@ -169,65 +167,37 @@ public class CamadaFisicaTransmissora {
    */
   protected static int[] camadaFisicaTransmissoraCodificacaoManchesterDiferencial(int quadro[], ControllerTelaPrincipal controller) {
 
-    int tamanho = (quadro.length - 1) / 2 + 1;
+    int tamanho = (quadro.length + 1) / 2;
     int codificado[] = new int[tamanho];
     int informacao;
-    int bit; //Bit mascara para isolar um bit do caractere original
 
-    Boolean ultimoBit; //Armazena o estado do ultimo bit, isto eh, o diferencial dessa codificacao
+    Boolean ultimoSinal = true; //Armazena o estado do ultimo bit, isto eh, o diferencial dessa codificacao
 
     for (int i = 0; i < tamanho; i++) {
       informacao = 0; //O bloco eh zerado para ser preenchido
 
-      bit = 1; //Reinicia a mascara para ler o primeiro bit do proximo caractere
+      for (int k = 0; k < 2; k++) { //Processa os dois caracteres do par
+        if (i * 2 + k >= quadro.length) continue; //Pula se nao houver segundo caractere
 
-      //Processa especialmente o primeiro bit, que precisa estabelecer um estado inicial por nao ter bit anterior
-      if ((quadro[i * 2] & bit) != 0) {
-        informacao |= 1;
-        ultimoBit = false; //O ultimo bit eh definido como false (0 ou low)
-      } else { //Se o bit original for 1
-        informacao |= (1 << 1);
-        ultimoBit = true; //O ultimo bit eh definido como true (1 ou high)
-      }
+        int caractere = quadro[i * 2 + k];
 
-      bit <<= 1; //A mascara eh movida uma posicao para a esquerda
+        for (int j = 7; j >= 0; j--) { //Loop processa do bit 7 ao 0
+          int bit = (caractere >> j) & 1; //Isola o bit da posição 'j'
+          int primeiroSinal, segundoSinal;
 
-      for (int j = 1; j < 8; j++) { 
-        int atual = (((quadro[i * 2] & bit) != 0) ? 1 : 0);
-        int paraAdicionar; //Variavel que vai armazenar o par de bits a ser adicionado
-
-        if (atual == 1) {
-          paraAdicionar = ultimoBit ? 1 : 2;
-          ultimoBit = !ultimoBit; //Inverte o estado do ultimoBit, pois ha transicao no meio do clock
-        } else {
-          paraAdicionar = ultimoBit ? 2 : 1;
-        } //Fim if-else
-
-        informacao |= paraAdicionar << (j * 2);
-        bit <<= 1;
-
-      } //im for
-
-      bit = 1; //einicia a mascara para ler o proximo caractere, caso exista
-
-      if (i * 2 + 1 < quadro.length) {
-
-        for (int j = 0; j < 8; j++) {
-          int atual = (((quadro[i * 2 + 1] & bit) != 0) ? 1 : 0);
-          int paraAdicionar;
-
-          if (atual == 1) {
-            paraAdicionar = ultimoBit ? 1 : 2; 
-            ultimoBit = !ultimoBit;
-          } else {
-            paraAdicionar = ultimoBit ? 2 : 1;
-          } //Fim if-else
-
-          informacao |= paraAdicionar << (j * 2 + 16);
-          bit <<= 1;
+          if (bit == 0) { //Bit 0: transição no inicio do periodo
+            primeiroSinal = ultimoSinal ? 0 : 1;
+            segundoSinal = ultimoSinal ? 1 : 0;
+          } else { //Bit 1: sem transicao no inicio do periodo
+            primeiroSinal = ultimoSinal ? 1 : 0;
+            segundoSinal = ultimoSinal ? 0 : 1;
+          }
+          
+          informacao <<= 2; //Abre espaço para os proximos 2 bits
+          informacao |= (primeiroSinal << 1) | segundoSinal; //Adiciona o par de bits codificados
+          ultimoSinal = (segundoSinal == 1); //Atualiza o ultimo sinal para o proximo bit
         } //Fim for
-
-      } //Fim if
+    } //Fim for k
 
       codificado[i] = informacao;
     } //Fim for

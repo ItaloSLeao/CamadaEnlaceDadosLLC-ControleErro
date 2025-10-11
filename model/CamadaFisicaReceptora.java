@@ -3,6 +3,8 @@ package model;
 import controller.ControllerTelaPrincipal;
 import util.Util;
 
+import java.util.Arrays;
+
 /**
  * Simula o funcionamento da camada fisica de um receptor em uma rede.
  * <p>
@@ -51,6 +53,16 @@ public class CamadaFisicaReceptora {
         break;
     } //Fim switch-case
 
+    if(controller.getControleErro() == 3){ //Se o controle de erro for CRC
+      int tamanhoSemPadding = quadro.length;
+
+      if(quadro[tamanhoSemPadding-1] == 0){
+        tamanhoSemPadding--;
+      }
+
+      quadro = Arrays.copyOf(quadro, tamanhoSemPadding);
+    }
+
     System.out.println("\nCAMADA FISICA RECEPTORA-----------------------");
     for(int c : quadro){
       System.out.println(Util.bitsParaString(c));
@@ -75,19 +87,13 @@ public class CamadaFisicaReceptora {
     int decodificado[] = new int[fluxoBits.length * 4];
 
     for (int i = 0; i < fluxoBits.length; i++) {
-      int valores[] = new int[4];
       int aux = fluxoBits[i];
 
-      for (int j = 0; j < 4; j++) { //Laco para cada caractere do inteiro de 32 bits
-        valores[j] = aux & 255; //Extrai os ultimos 8 bits (255 = 11111111 em binario)
-        aux >>= 8;
-      } //Fim for
+      decodificado[i*4] = (aux >> 24) & 255; //Extrai os bits de 31-24
+      decodificado[i*4 + 1] = (aux >> 16) & 255; //Extrai de 23-16
+      decodificado[i*4 + 2] = (aux >> 8) & 255; //Extrai de 15-8
+      decodificado[i*4 + 3] = aux & 255; //Extrai de 7-0
 
-      int novosBits[] = valores; //Vetor com os 4 novos inteiros (representando caracteres) extraidos
-
-      for (int x = 0; x < 4; x++) { //Laco para alocar os inteiros decodificados no array correspondente
-        decodificado[i * 4 + x] = novosBits[x];
-      } //Fim for
     } //Fim for
 
     return decodificado;
@@ -108,31 +114,32 @@ public class CamadaFisicaReceptora {
   protected static int[] camadaFisicaReceptoraDecodificacaoManchester(int fluxoBits[]) {
 
     int decodificado[] = new int[fluxoBits.length * 2];
-    int numero;
-    int bit; //Variavel mascara usada para comparar cada um dos 32 bits
-    int novoBit; //Variavel usada para receber todos os bits do grupo
     
-    for (int i = 0; i < fluxoBits.length; i++) { //Laco para iterar sobre cada grupo de 32 bits em fluxoBits
-      numero = 0;
-      bit = 1;
-      novoBit = fluxoBits[i];
+    for (int i = 0; i < fluxoBits.length; i++) { //Laco para iterar sobre 32 bits
+      int intRecebido = fluxoBits[i];
+      int primeiroChar = 0;
+      int segundoChar = 0;
+      
 
       for (int j = 0; j < 8; j++) { //Laco para iterar sobre cada um dos 8 pares de bits
-        numero += (((novoBit & bit) != 0) ? 1 : 0) << j;
-        bit <<= 2; //Avanca 2 bits a esquerda na mascara
+        int par = (intRecebido >> (30 - j*2)) & 0b11;
+        primeiroChar <<= 1;
+        if(par == 0b10){
+          primeiroChar |= 1;
+        }
       } //Fim for
 
-      decodificado[i * 2] = numero;
-      numero = 0; //Reinicia a variavel
-      bit = 1; //Reinicia a mascara
-      novoBit >>= 16;
+      decodificado[i * 2] = primeiroChar;
 
-      for (int j = 0; j < 8; j++) { //Itera sobre cada um dos 8 pares de bits do segundo caractere
-        numero += ((novoBit & bit) != 0 ? 1 : 0) << j;
-        bit <<= 2;
+      for (int j = 0; j < 8; j++) { //Itera sobre 8 pares de bits do segundo caractere
+        int par = (intRecebido >> (14 - j*2)) & 0b11;
+        segundoChar <<= 1;
+        if(par == 0b10){
+          segundoChar |= 1;
+        }
       } //Fim for
 
-      decodificado[i * 2 + 1] = numero; //Aloca o segundo caractere decodificado, a cada dois caracteres
+      decodificado[i * 2 + 1] = segundoChar; //Aloca o segundo caractere decodificado
     } //Fim for
 
     return decodificado;
@@ -153,79 +160,40 @@ public class CamadaFisicaReceptora {
   protected static int[] camadaFisicaReceptoraDecodificacaoManchesterDiferencial(int fluxoBits[]) {
 
     int decodificado[] = new int[fluxoBits.length * 2];
+    boolean ultimoSinal = true;
 
     for (int i = 0; i < fluxoBits.length; i++) { //Laco que itera sobre cada grupo de 32 bits
-      Boolean ultimoSinal;
-      int aux = fluxoBits[i];
-      int bit = 1;
-      int informacao;
+      int intRecebido = fluxoBits[i];
+      int primeiroChar = 0;
+      int segundoChar = 0;
 
-      if ((aux & bit) != 0) { //Se a operacao AND no grupo de 32 bits e a mascara for diferente de 0
-        informacao = 1;
-        ultimoSinal = false; //O ultimo bit eh LOW(false), devido a transicao no meio do clock
-      } else {
-        informacao = 0;
-        ultimoSinal = true; //O ultimo bit eh HIGH(true), devido a transicao no meio do clock
-      } //Fim if-else
+      //Decodifica o primeiro caractere
+      for (int j = 0; j < 8; j++) { //Loop para 8 bits
+        int primeiroSinalPar = (intRecebido >> (31 - j * 2)) & 1; //Pega o primeiro sinal do par
+        int segundoSinalPar = (intRecebido >> (30 - j * 2)) & 1; //Pega o segundo sinal do par
 
-      bit <<= 2;
+        primeiroChar <<= 1;
 
-      for (int j = 1; j < 8; j++) { //Itera sobre cada um dos 7 pares de bits restantes do caractere
+        if ((primeiroSinalPar == 1) == ultimoSinal) { //Sem transicao no inicio -> bit 1
+          primeiroChar |= 1;
+        } //Com transicao -> bit 0, nao precisa fazer nada
+        ultimoSinal = (segundoSinalPar == 1); //Atualiza o estado do sinal para o proximo par
+      }
 
-        if ((aux & bit) != 0) { //Se o bit atual for diferente 0
+      decodificado[i * 2] = primeiroChar;
 
-          if (ultimoSinal) { //Se o ultimo bit era true
-            informacao |= (1 << j);
-            ultimoSinal = !ultimoSinal; //Inverte o bit, pela transicao no clock
-          } else { //Se o ultimo bit era false
-            informacao |= (0 << j);
-          } //Fim if-else
+      //Decodifica o segundo caractere
+      for (int j = 0; j < 8; j++) { //Loop para 8 bits
+        int primeiroSinalPar = (intRecebido >> (15 - j * 2)) & 1; //Pega o primeiro sinal do par
+        int segundoSinalPar = (intRecebido >> (14 - j * 2)) & 1; //Pega o segundo sinal do par
 
-        } else { //Se o bit atual eh igual a 0
-
-          if (ultimoSinal) { //Se o ultimo bit era true
-            informacao |= 0 << j;
-          } else { //Se o ultimo bit era false
-            informacao |= 1 << j;
-            ultimoSinal = !ultimoSinal; //Faz a troca do ultimo bit, pela transicao no clock
-          } //Fim if-else
-
-        } //Fim if-else
-
-        bit <<= 2;
-
-      } //Fim for
-
-      decodificado[i * 2] = informacao;
-      informacao = 0; //Reinicia a variavel de acumular bits
-
-      for (int j = 0; j < 8; j++) { //Itera sobre os 8 pares de bits do segundo caractere do grupo de 32 bits
-
-        if ((aux & bit) != 0) {
-
-          if (ultimoSinal) { //Se o ultimoBit era true
-            informacao |= 1 << j;
-            ultimoSinal = !ultimoSinal; //Realiza a troca do sinal de ultimoBit
-          } else { //Se o ultimoBit era false
-            informacao |= 0 << j;
-          } //Fim if-else
-
-        } else {
-
-          if (ultimoSinal) { //Se o ultimoBit era true (HIGH)
-            informacao |= 0 << j;
-          } else { //Se o ultimoBit era false (LOW)
-            informacao |= 1 << j;
-            ultimoSinal = !ultimoSinal; //Inverte o sinal de ultimoBit
-          } //Fim if-else
-
-        } //Fim if-else
-
-        bit <<= 2; //Move a mascara duas posicoes a esquerda para dar continuidade a leitura
-
-      } //Fim for
-
-      decodificado[i * 2 + 1] = informacao;
+        segundoChar <<= 1; //Abre espaço para o proximo bit
+        if ((primeiroSinalPar == 1) == ultimoSinal) { //Sem transicao no inicio -> bit 1
+          segundoChar |= 1;
+        }
+        ultimoSinal = (segundoSinalPar == 1); //Atualiza o estado do sinal
+      }
+      decodificado[i * 2 + 1] = segundoChar;
     } //Fim for
 
     return decodificado;
@@ -264,7 +232,7 @@ public class CamadaFisicaReceptora {
       totalBits = (ultimoIntComDados * 32) + posUltimoBit + 1;
     }
 
-    // Validacao basica: precisa ter pelo menos as duas flags (4 bits)
+    //Validacao basica: precisa ter pelo menos as duas flags (4 bits)
     if (totalBits < 4) {
       System.err.println("Erro de desenquadramento: fluxo de bits muito curto.");
       return new int[0];

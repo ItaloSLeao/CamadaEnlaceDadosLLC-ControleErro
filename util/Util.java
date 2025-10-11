@@ -38,8 +38,11 @@ public class Util {
       } //Fim if-else
       mascara <<= 1; //Move a mascara para a proxima posicao a esquerda
     }
+
+    retorno.trim();
+    retorno += " ";
   
-    return retorno.trim(); //.trim() para remover o espaco extra no comeco
+    return retorno; //.trim() para remover o espaco extra no comeco
   } //Fim bitsParaString
 
 } //Fim da classe Util
