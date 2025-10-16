@@ -355,6 +355,14 @@ public class CamadaEnlaceDadosReceptora {
 
   
 
+  /**
+   * Realiza o controle de erros com os quadros de caracteres enquadrados recebidos,
+   * conforme a escolha na GUI.
+   *
+   * @param quadro     Vetor com os caracteres da mensagem decodificados, ainda enquadrados.
+   * @param controller Controlador da interface grafica.
+   * @return int[]     O resultado do controle de erros.
+   */
   private static int[] camadaEnlaceDadosReceptoraControleDeErros(int quadro[], ControllerTelaPrincipal controller){
 
     int tipoControleErros = controller.getControleErro();
@@ -391,6 +399,15 @@ public class CamadaEnlaceDadosReceptora {
 
 
 
+  /**
+   * Realiza o controle de erros pelo bit de paridade par.
+   * <p>
+   * Faz a contagem de bits '1' na sequencia e compara com o bit de paridade esperado
+   * com aquele recebido, se diferirem, ha um erro.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem decodificada e enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade retirado.
+   */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosBitParidadePar(int[] quadro){
 
     int paridade = 0;
@@ -421,6 +438,15 @@ public class CamadaEnlaceDadosReceptora {
 
 
 
+  /**
+   * Realiza o controle de erros pelo bit de paridade impar.
+   * <p>
+   * Faz a contagem de bits '1' na sequencia e compara com o bit de paridade esperado
+   * com aquele recebido, se diferirem, ha um erro.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem decodificada e enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade retirado.
+   */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosBitParidadeImpar(int[] quadro){
     
     int paridade = 0;
@@ -451,6 +477,16 @@ public class CamadaEnlaceDadosReceptora {
 
 
 
+  /**
+   * Realiza o controle de erros pela verificacao ciclica de redundancia.
+   * <p>
+   * Faz a divisao polinomial da (mensagem + CRC) recebida pelo p.Gerador CRC-32, se
+   * o resto da divisao for diferente de 0, um erro ocorreu, pois M(x) + R(x) eh 
+   * perfeitamente divisivel por G(x).
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade inserido.
+   */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
     
     // Mesmo polinômio do transmissor
@@ -506,6 +542,16 @@ public class CamadaEnlaceDadosReceptora {
   
   
 
+  /**
+   * Realiza o controle de erros pelo codigo de hamming.
+   * <p>
+   * Faz a comparacao dos bits de paridade esperados (de acordo com os resultados das
+   * operacoes XOR com os bits a cada um associados), com os bits de paridade recebidos.
+   * Se os bits diferirem, ha um erro, a sindrome eh calculada e o bit 'errado' eh corrigido.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade inserido.
+   */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
 
     //Converter o quadro recebido para uma lista de bits

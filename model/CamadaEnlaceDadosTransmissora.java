@@ -322,9 +322,9 @@ public class CamadaEnlaceDadosTransmissora {
    * Realiza o controle de erros com os quadros de caracteres enquadrados recebidos,
    * conforme a escolha na GUI.
    *
-   * @param quadro     Array de inteiros com os codigos ascii dos caracteres.
+   * @param quadro     Vetor com os caracteres da mensagem enquadrados.
    * @param controller Controlador da interface grafica.
-   * @return int[] O resultado do enquadramento.
+   * @return int[]     O resultado do controle de erros.
    */
   private static int[] camadaEnlaceDadosTransmissoraControleDeErros(int quadro[], ControllerTelaPrincipal controller) {
 
@@ -368,6 +368,15 @@ public class CamadaEnlaceDadosTransmissora {
 
 
 
+  /**
+   * Realiza o controle de erros pelo bit de paridade par.
+   * <p>
+   * Faz a contagem de bits '1' na sequencia e insere o bit correspondente,
+   * isto eh, se par, 0, se impar, 1.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade inserido.
+   */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadePar(int[] quadro){
 
     int paridade = 0;
@@ -390,6 +399,15 @@ public class CamadaEnlaceDadosTransmissora {
 
 
 
+  /**
+   * Realiza o controle de erros pelo bit de paridade impar.
+   * <p>
+   * Faz a contagem de bits '1' na sequencia e insere o bit correspondente,
+   * isto eh, se par, 1, se impar, 0.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade inserido.
+   */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar(int[] quadro){
     
     int paridade = 0;
@@ -412,6 +430,16 @@ public class CamadaEnlaceDadosTransmissora {
 
 
 
+  /**
+   * Realiza o controle de erros pela verificacao ciclica de redundancia.
+   * <p>
+   * Faz a divisao polinomial da sequencia de bits da mensagem enquadrada pelo
+   * polinomio gerador CRC-32 e insere o checksum (resto da divisao) na mensagem
+   * a ser enviada pelas camadas.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem enquadrada.
+   * @return int[] Vetor de inteiros contendo a mensagem + CRC.
+   */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
     
     // Polinômio CRC-32: 0x04C11DB7 (formato normal)
@@ -470,6 +498,16 @@ public class CamadaEnlaceDadosTransmissora {
   
 
 
+  /**
+   * Realiza o controle de erros pelo codigo de hamming.
+   * <p>
+   * Insere bits de paridade, que verificam a paridade dos bits associados
+   * a cada um da mensagem enquadrada. Serao inseridos 'r' bits de paridade,
+   * sendo 'r' o primeiro inteiro a tornar 2^r >= m + r + 1 verdadeiro.
+   *
+   * @param quadro Vetor de inteiros contendo a mensagem enquadrada.
+   * @return int[] Vetor de inteiros com o bit de paridade inserido.
+   */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
 
     //Converter o array de caracteres para uma lista de bits
