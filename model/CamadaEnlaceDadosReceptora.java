@@ -501,6 +501,7 @@ public class CamadaEnlaceDadosReceptora {
   
   
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
+    
     //1. Converter o quadro recebido para uma lista de bits
     List<Integer> bitsRecebidos = new ArrayList<>();
     for (int byteAtual : quadro) {
@@ -553,6 +554,7 @@ public class CamadaEnlaceDadosReceptora {
 
     //5. Converter os bits de dados de volta para um array de caracteres
     return Util.converterBitsParaBytes(bitsDados);
+
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming
 
   

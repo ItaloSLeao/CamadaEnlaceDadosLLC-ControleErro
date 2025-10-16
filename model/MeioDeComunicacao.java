@@ -79,7 +79,7 @@ public class MeioDeComunicacao {
 
       } //Fim for bits
       
-      if(erroRandom < probErro){ //Se acertou o intervalo [0,probErro]
+      if(erro){ //Se acertou o intervalo [0,probErro]
 
         if(i == indiceFluxoErro){
           int bitErro = random.nextInt(32); //Posicao do bit que tera erro
@@ -92,21 +92,6 @@ public class MeioDeComunicacao {
       System.out.println("Bits recebidos: " + Util.bitsParaString(fluxoBitsPontoB[i]) + "\n");
 
     } //Fim for fluxoBits[]
-
-    if(erro){ //Se acontecer um erro, ativa um painel de alerta
-      Platform.runLater(() -> {
-        Alert alert = new Alert(AlertType.WARNING);
-  
-        alert.getDialogPane().getStylesheets().add(
-          CamadaEnlaceDadosReceptora.class.getResource("/view/styles.css").toExternalForm());
-        alert.getDialogPane().getStyleClass().add("dialog-pane");
-  
-        alert.setTitle("ERRO");
-        alert.setHeaderText(null);
-        alert.setContentText("Um erro ocorreu no Meio de Comunicacao!");
-        alert.showAndWait();
-      });
-    } //Fim if erro
     
     CamadaFisicaReceptora.camadaFisicaReceptora(fluxoBitsPontoB, controller);
 
