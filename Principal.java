@@ -13,58 +13,48 @@ import model.MeioDeComunicacao;
 import model.CamadaFisicaTransmissora;
 import model.CamadaAplicacaoTransmissora;
 
-@SuppressWarnings("unused") //Notacao de supressao de avisos
+@SuppressWarnings("unused")
 
 /**
  * Classe principal que inicia a aplicacao JavaFX.
- * <p>
- * Eh responsavel por carregar a interface grafica principal a partir do
- * arquivo FXML, configurar o palco (Stage) e exibir a cena para o usuario,
- * dando inicio a execucao do programa.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version /10/2025 (Ultima alteracao)
+ * @version 16/10/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class Principal extends Application {
   
   /**
-   * Ponto de entrada da aplicacao Java.
-   * <p>
-   * Este metodo invoca launch(args) para iniciar o toolkit JavaFX
-   * e o ciclo de vida da aplicacao.
+   * Inicia a aplicacao Java.
    *
    * @param args Os argumentos da linha de comando.
    */
   public static void main(String[] args) {
-    launch(args); //Lanca uma aplicacao autonoma
+    launch(args);
   } //Fim main
 
+
   /**
-   * Metodo principal do ciclo de vida da aplicacao JavaFX.
-   * <p>
-   * Este metodo eh chamado apos o launch() e eh responsavel por
-   * carregar a interface a partir do arquivo FXML, configurar a cena,
-   * definir o titulo e icone da janela, e finalmente exibir o palco (Stage).
+   * Carrega a GUI do JavaFX a partir do FXML.
    *
-   * @param primaryStage O palco principal da aplicacao, fornecido pelo runtime do JavaFX.
-   * @throws Exception   Se ocorrer um erro durante o carregamento do arquivo FXML.
+   * @param primaryStage O palco principal da aplicacao.
+   * @throws Exception   Erro durante o carregamento do arquivo FXML.
    */
-  @Override //Notacao de sobrescricao
+  @Override
   public void start(Stage primaryStage) throws Exception {
-    //Carrega o arquivo fxml, define o no raiz, carrega o controller, define a cena e define o palco
     FXMLLoader loader = new FXMLLoader(getClass().getResource("view/telaPrincipal.fxml"));
     Parent root = loader.load();
     Scene scene = new Scene(root);
     primaryStage.setScene(scene);
 
-    primaryStage.getIcons().add( //Instancia uma imagem para ser icone da aplicacao
+    primaryStage.getIcons().add(
       new Image(getClass().getResourceAsStream("/assets/app-icon.png"))
     );
 
-    primaryStage.setTitle("ControLace de Erros: Redes De Computadores"); //Definicao do titulo do Stage
-    primaryStage.resizableProperty().setValue(false); //Stage fica nao redimensionavel
+    primaryStage.setTitle("ControLace de Erros: Redes De Computadores");
+    primaryStage.resizableProperty().setValue(false);
 
-    primaryStage.show(); //Apresentacao do Stage para o usuario
+    primaryStage.show();
   } //Fim start
-} //Fim da classe Principal
+
+} //Fim Principal

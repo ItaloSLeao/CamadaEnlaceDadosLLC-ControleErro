@@ -38,12 +38,15 @@ public class MeioDeComunicacao {
     Random random = new Random();
     int probErro = controller.getErro();
     int erroRandom = random.nextInt(100);
+
     //Se random acertar o intervalo [0,probErro], gera um indice aleatorio, se nao eh 0
     int indiceFluxoErro = (erroRandom < probErro) ? random.nextInt(fluxoBitsPontoA.length) : 0;
+
     boolean erro = erroRandom < probErro;
 
     System.out.println("\nMEIO DE COMUNICACAO----------------------\n" 
-    + "Probabilidade de erro: " + probErro + "%\n");
+        + "Probabilidade de erro: " + probErro + "%\n");
+    
 
     for (int i = 0; i < fluxoBits.length; i++) { //Laco para processar cada inteiro de 32 bits
 
@@ -56,7 +59,7 @@ public class MeioDeComunicacao {
       for (int x = 0; x < 32; x++) { //Laco para processar cada bit
 
         System.out.println("Inteiro: " + Integer.toString(i + 1) + " Bit: " + Integer.toString(x + 1) 
-        + " == " + Integer.toString((bits & bitComparacao) != 0 ? 1 : 0));
+            + " == " + Integer.toString((bits & bitComparacao) != 0 ? 1 : 0));
 
         bitParaEnviar |= (bits & bitComparacao);
         
