@@ -47,9 +47,16 @@ public class Util {
     return retorno;
   } //Fim bitsParaString
 
+
+  /**
+   * Verifica se um numero eh potencia de dois.
+   *
+   * @param numero   O numero inteiro que sera verificado.
+   * @return boolean O valor verdade resultante.
+   */
   public static boolean ehPotenciaDeDois(int numero){
-    return true;
-  }
+    return (numero > 0) && ((numero & (numero - 1)) == 0);
+  } //Fim ehPotenciaDeDois
 
   public static int[] converterBitsParaBytes(List<Integer> bits){
     return new int[0];
