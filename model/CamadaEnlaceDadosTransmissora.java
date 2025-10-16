@@ -3,6 +3,7 @@ package model;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import controller.ControllerTelaPrincipal;
 import util.Util;
@@ -460,7 +461,53 @@ public class CamadaEnlaceDadosTransmissora {
   
 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
-    return new int[0];
+    //1. Converter o array de caracteres para uma lista de bits
+    List<Integer> bitsDados = new ArrayList<>();
+    for (int caractere : quadro) {
+      for (int i = 7; i >= 0; i--) {
+        bitsDados.add((caractere >> i) & 1);
+      }
+    }
+
+    //2. Calcular o numero de bits de paridade (p) necessarios
+    int m = bitsDados.size();
+    int p = 0;
+    //ALTERADO: Troca de Math.pow por bit shift (<<) para maior eficiencia
+    while ((1 << p) < m + p + 1) {
+      p++;
+    }
+
+    //3. Criar a estrutura da palavra de codigo, inserindo placeholders (0) para os
+    //bits de paridade
+    List<Integer> bitsComParidade = new ArrayList<>();
+    int totalBits = m + p;
+    int indiceDados = 0;
+    for (int posicao = 1; posicao <= totalBits; posicao++) {
+      if (Util.ehPotenciaDeDois(posicao)) {
+        bitsComParidade.add(0); //Posicao do bit de paridade
+      } else {
+        bitsComParidade.add(bitsDados.get(indiceDados++)); //Posicao do bit de dados
+      }
+    }
+
+    //4. Calcular o valor de cada bit de paridade
+    for (int i = 0; i < p; i++) {
+      //ALTERADO: Troca de Math.pow por bit shift (<<)
+      int posParidade = 1 << i;
+      int paridade = 0;
+      for (int j = 1; j <= totalBits; j++) {
+        //ALTERADO: Logica simplificada e consistente com o receptor.
+        //Verifica todos os bits que este bit de paridade cobre.
+        if ((j & posParidade) != 0) {
+          paridade ^= bitsComParidade.get(j - 1);
+        }
+      }
+      //Define o bit de paridade para que o XOR total do grupo seja 0 (paridade par)
+      bitsComParidade.set(posParidade - 1, paridade);
+    }
+
+    //5. Converter a lista de bits de volta para um array de bytes
+    return Util.converterBitsParaBytes(bitsComParidade);
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming
 
 

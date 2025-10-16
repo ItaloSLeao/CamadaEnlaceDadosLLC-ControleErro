@@ -2,6 +2,7 @@ package model;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 
 import controller.ControllerTelaPrincipal;
 import javafx.application.Platform;
@@ -500,7 +501,58 @@ public class CamadaEnlaceDadosReceptora {
   
   
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
-    return new int[0];
+    //1. Converter o quadro recebido para uma lista de bits
+    List<Integer> bitsRecebidos = new ArrayList<>();
+    for (int byteAtual : quadro) {
+      for (int i = 7; i >= 0; i--) {
+        bitsRecebidos.add((byteAtual >> i) & 1);
+      }
+    }
+
+    //2. Calcular a sindrome para detectar o erro
+    int p = 0;
+    //ALTERADO: Troca de Math.pow por bit shift (<<)
+    while ((1 << p) < bitsRecebidos.size()) {
+      p++;
+    }
+
+    int sindrome = 0;
+    for (int i = 0; i < p; i++) {
+      //ALTERADO: Troca de Math.pow por bit shift (<<)
+      int posParidade = 1 << i;
+      int paridadeCalculada = 0;
+      for (int j = 1; j <= bitsRecebidos.size(); j++) {
+        if ((j & posParidade) != 0) {
+          paridadeCalculada ^= bitsRecebidos.get(j - 1);
+        }
+      }
+      //Se o XOR do grupo nao for 0, houve um erro. Adicionamos o peso deste bit de
+      //paridade a sindrome.
+      if (paridadeCalculada != 0) {
+        sindrome |= posParidade;
+      }
+    }
+
+    //3. Corrigir o erro, se a sindrome for diferente de zero
+    if (sindrome != 0 && sindrome <= bitsRecebidos.size()) {
+      System.out.println("\n>> Erro detectado na posicao: " + sindrome);
+      int bitErrado = bitsRecebidos.get(sindrome - 1);
+      bitsRecebidos.set(sindrome - 1, bitErrado ^ 1); //Inverte o bit (0->1 ou 1->0)
+      System.out.println(">> Bit na posicao " + sindrome + " corrigido de " + bitErrado + " para " + (bitErrado ^ 1));
+    } else {
+      System.out.println("\n>> Nenhum erro detectado.");
+    }
+
+    //4. Extrair os bits de dados originais (removendo os de paridade)
+    List<Integer> bitsDados = new ArrayList<>();
+    for (int posicao = 1; posicao <= bitsRecebidos.size(); posicao++) {
+      if (!Util.ehPotenciaDeDois(posicao)) {
+        bitsDados.add(bitsRecebidos.get(posicao - 1));
+      }
+    }
+
+    //5. Converter os bits de dados de volta para um array de caracteres
+    return Util.converterBitsParaBytes(bitsDados);
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming
 
   

@@ -1,5 +1,7 @@
 package util;
 
+import java.util.List;
+
 /**
  * Classe com metodos estaticos utilitarios para a simulacao.
  * <p>
@@ -42,7 +44,15 @@ public class Util {
     retorno.trim();
     retorno += " ";
   
-    return retorno; //.trim() para remover o espaco extra no comeco
+    return retorno;
   } //Fim bitsParaString
+
+  public static boolean ehPotenciaDeDois(int numero){
+    return true;
+  }
+
+  public static int[] converterBitsParaBytes(List<Integer> bits){
+    return new int[0];
+  }
 
 } //Fim da classe Util
