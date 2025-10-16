@@ -13,7 +13,7 @@ import java.util.Random;
  * de ocorrencia de um erro de transmissao, mediante a probabilidade escolhida.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 16/10/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class MeioDeComunicacao {

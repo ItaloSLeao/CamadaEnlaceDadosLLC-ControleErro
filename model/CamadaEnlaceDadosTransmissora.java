@@ -14,7 +14,7 @@ import util.Util;
  * erros (este ultimo, ainda nao implementado).
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version /10/2025 (Ultima alteracao)
+ * @version 16/10/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaEnlaceDadosTransmissora {
@@ -40,6 +40,7 @@ public class CamadaEnlaceDadosTransmissora {
     CamadaFisicaTransmissora.camadaFisicaTransmissora(quadroControleErro, controller);
 
   } //Fim camadaEnlaceDadosTransmissora
+
 
 
 
@@ -96,6 +97,7 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraEnquadramento
 
 
+
   /**
    * Realiza o enquadramento pelo metodo de contagem de caracteres.
    * <p>
@@ -135,6 +137,7 @@ public class CamadaEnlaceDadosTransmissora {
     return quadroEnquadrado;
 
   } //Fim camadaEnlaceDadosTransmissoraEnquadramentoContagemDeCaracteres
+
 
 
   /**
@@ -197,6 +200,7 @@ public class CamadaEnlaceDadosTransmissora {
     return quadroEnquadrado;
 
   } //Fim camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBytes
+
 
 
   /**
@@ -297,6 +301,7 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBits
 
 
+
   /**
    * Realiza o enquadramento pela tecnica de violacao da camada fisica.
    * <p>
@@ -312,6 +317,7 @@ public class CamadaEnlaceDadosTransmissora {
 
 
   
+
   /**
    * Realiza o controle de erros com os quadros de caracteres enquadrados recebidos,
    * conforme a escolha na GUI.
@@ -361,6 +367,7 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraControleDeErros
 
 
+
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadePar(int[] quadro){
 
     int paridade = 0;
@@ -382,6 +389,7 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosBitParidadePar
 
 
+
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar(int[] quadro){
     
     int paridade = 0;
@@ -401,6 +409,7 @@ public class CamadaEnlaceDadosTransmissora {
     return quadroComParidade;
 
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosBitParidadeImpar
+
 
 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
@@ -460,9 +469,10 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCRC
   
 
+
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
 
-    //1. Converter o array de caracteres para uma lista de bits
+    //Converter o array de caracteres para uma lista de bits
     List<Integer> bitsDados = new ArrayList<>();
     for (int caractere : quadro) {
       for (int i = 7; i >= 0; i--) {
@@ -470,18 +480,16 @@ public class CamadaEnlaceDadosTransmissora {
       }
     }
 
-    //2. Calcular o numero de bits de paridade (p) necessarios
+    //Calcular o numero de bits de paridade (r) necessarios
     int m = bitsDados.size();
-    int p = 0;
-    //ALTERADO: Troca de Math.pow por bit shift (<<) para maior eficiencia
-    while ((1 << p) < m + p + 1) {
-      p++;
+    int r = 0;
+    while ((1 << r) < m + r + 1) {
+      r++;
     }
 
-    //3. Criar a estrutura da palavra de codigo, inserindo placeholders (0) para os
-    //bits de paridade
+    //Criar a estrutura da palavra de codigo, inserindo posicionadores para os bits de paridade
     List<Integer> bitsComParidade = new ArrayList<>();
-    int totalBits = m + p;
+    int totalBits = m + r;
     int indiceDados = 0;
     for (int posicao = 1; posicao <= totalBits; posicao++) {
       if (Util.ehPotenciaDeDois(posicao)) {
@@ -491,13 +499,11 @@ public class CamadaEnlaceDadosTransmissora {
       }
     }
 
-    //4. Calcular o valor de cada bit de paridade
-    for (int i = 0; i < p; i++) {
-      //ALTERADO: Troca de Math.pow por bit shift (<<)
+    //Calcular o valor de cada bit de paridade
+    for (int i = 0; i < r; i++) {
       int posParidade = 1 << i;
       int paridade = 0;
       for (int j = 1; j <= totalBits; j++) {
-        //ALTERADO: Logica simplificada e consistente com o receptor.
         //Verifica todos os bits que este bit de paridade cobre.
         if ((j & posParidade) != 0) {
           paridade ^= bitsComParidade.get(j - 1);
@@ -507,10 +513,11 @@ public class CamadaEnlaceDadosTransmissora {
       bitsComParidade.set(posParidade - 1, paridade);
     }
 
-    //5. Converter a lista de bits de volta para um array de bytes
+    //Converter a lista de bits de volta para um array de bytes
     return Util.converterBitsParaBytes(bitsComParidade);
-    
+
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming
+
 
 
   

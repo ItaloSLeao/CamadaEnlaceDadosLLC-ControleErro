@@ -16,7 +16,7 @@ import util.Util;
  * erros e encaminhar a mensagem para a camada de aplicacao.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 16/10/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaEnlaceDadosReceptora {
@@ -62,36 +62,7 @@ public class CamadaEnlaceDadosReceptora {
 
       int[] quadroDesenquadrado = camadaEnlaceDadosReceptoraEnquadramento(quadroControleErros, controller);
 
-      /*
-      //Faz o controle pre-enquadramento para todas as opcoes, que nao a violacao da c. fisica
-      if (controller.getEnquadramento() != 4) {
-        quadroControleErros = camadaEnlaceDadosReceptoraControleDeErros(quadro, controller);
-
-        if (quadroControleErros == null) {
-          Platform.runLater(() -> {
-            Alert alert = new Alert(AlertType.ERROR);
-
-            alert.getDialogPane().getStylesheets().add(
-              CamadaEnlaceDadosReceptora.class.getResource("/view/styles.css").toExternalForm());
-            alert.getDialogPane().getStyleClass().add("dialog-pane");
-
-            alert.setTitle("ERRO DETECTADO");
-            alert.setHeaderText(null);
-            alert.setContentText("A Camada de Enlace de Dados Receptora detectou um erro de transmissao!");
-            alert.showAndWait();
-
-            controller.reativar(); //Reativa o menu da aplicacao
-          });
-
-          return; //Quebra a transmissao
-        }
-
-      } else {
-        quadroControleErros = quadro;
-      }*/
-
       System.out.println("\n");
-
 
       CamadaAplicacaoReceptora.camadaAplicacaoReceptora(quadroDesenquadrado, controller);
 
@@ -109,6 +80,7 @@ public class CamadaEnlaceDadosReceptora {
     } //Fim try-catch
 
   } //Fim camadaEnlaceDadosReceptora
+
 
 
 
@@ -157,6 +129,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim de camadaEnlaceDadosReceptoraEnquadramento
 
 
+
   /**
    * Realiza o desenquadramento pelo metodo de contagem de caracteres.
    * <p>
@@ -194,6 +167,7 @@ public class CamadaEnlaceDadosReceptora {
     return quadroOriginal;
 
   } //Fim de camadaEnlaceDadosReceptoraEnquadramentoContagemDeCaracteres
+
 
 
   /**
@@ -266,6 +240,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim camadaEnlaceDadosReceptoraEnquadramentoInsercaoDeBytes
 
 
+
   /**
    * Realiza o desenquadramento pelo metodo de insercao de bits (bit stuffing).
    * <p>
@@ -318,6 +293,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim camadaEnlaceDadosReceptoraInsercaoDeBits
 
 
+
   /**
    * Funcao auxiliar que realiza o desestufamento em uma lista de bytes.
    * @param cargaUtilBruta      A lista de bytes que compoe a carga util de um quadro.
@@ -362,6 +338,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim desestufarBits
 
 
+
   /**
    * Realiza o desenquadramento pela tecnica de violacao da camada fisica.
    * <p>
@@ -377,6 +354,7 @@ public class CamadaEnlaceDadosReceptora {
 
 
   
+
   private static int[] camadaEnlaceDadosReceptoraControleDeErros(int quadro[], ControllerTelaPrincipal controller){
 
     int tipoControleErros = controller.getControleErro();
@@ -412,6 +390,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim de camadaEnlaceDadosReceptoraControleDeErros
 
 
+
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosBitParidadePar(int[] quadro){
 
     int paridade = 0;
@@ -441,6 +420,7 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosBitParidadePar
 
 
+
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosBitParidadeImpar(int[] quadro){
     
     int paridade = 0;
@@ -468,6 +448,7 @@ public class CamadaEnlaceDadosReceptora {
     return quadroOriginal;
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosBitParidadeImpar
+
 
 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
@@ -524,9 +505,10 @@ public class CamadaEnlaceDadosReceptora {
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCRC
   
   
+
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
 
-    //1. Converter o quadro recebido para uma lista de bits
+    //Converter o quadro recebido para uma lista de bits
     List<Integer> bitsRecebidos = new ArrayList<>();
     for (int byteAtual : quadro) {
       for (int i = 7; i >= 0; i--) {
@@ -534,16 +516,14 @@ public class CamadaEnlaceDadosReceptora {
       }
     }
 
-    //2. Calcular a sindrome para detectar o erro
+    //Calcular a sindrome para detectar o erro
     int p = 0;
-    //ALTERADO: Troca de Math.pow por bit shift (<<)
     while ((1 << p) < bitsRecebidos.size()) {
       p++;
     }
 
     int sindrome = 0;
     for (int i = 0; i < p; i++) {
-      //ALTERADO: Troca de Math.pow por bit shift (<<)
       int posParidade = 1 << i;
       int paridadeCalculada = 0;
       for (int j = 1; j <= bitsRecebidos.size(); j++) {
@@ -558,7 +538,7 @@ public class CamadaEnlaceDadosReceptora {
       }
     }
 
-    //3. Corrigir o erro, se a sindrome for diferente de zero
+    //Corrigir o erro, se a sindrome for diferente de zero
     if (sindrome != 0 && sindrome <= bitsRecebidos.size()) {
       System.out.println("\n>> Erro detectado na posicao: " + sindrome);
       int bitErrado = bitsRecebidos.get(sindrome - 1);
@@ -568,7 +548,7 @@ public class CamadaEnlaceDadosReceptora {
       System.out.println("\n>> Nenhum erro detectado.");
     }
 
-    //4. Extrair os bits de dados originais (removendo os de paridade)
+    //Extrair os bits de dados originais (removendo os de paridade)
     List<Integer> bitsDados = new ArrayList<>();
     for (int posicao = 1; posicao <= bitsRecebidos.size(); posicao++) {
       if (!Util.ehPotenciaDeDois(posicao)) {
@@ -576,12 +556,14 @@ public class CamadaEnlaceDadosReceptora {
       }
     }
 
-    //5. Converter os bits de dados de volta para um array de caracteres
+    //Converter os bits de dados de volta para um array de caracteres
     return Util.converterBitsParaBytes(bitsDados);
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming
 
   
+
+
   private static void camadaEnlaceDadosReceptoraControleDeFluxo(int quadro[]){
   } //Fim de camadaEnlaceDadosReceptoraControleDeFluxo
 
