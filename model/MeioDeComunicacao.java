@@ -1,9 +1,6 @@
 package model;
 
 import controller.ControllerTelaPrincipal;
-import javafx.application.Platform;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import util.Util;
 import java.util.Random;
  
