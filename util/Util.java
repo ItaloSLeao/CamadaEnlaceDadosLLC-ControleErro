@@ -51,15 +51,35 @@ public class Util {
   /**
    * Verifica se um numero eh potencia de dois.
    *
-   * @param numero   O numero inteiro que sera verificado.
+   * @param  numero  O numero inteiro que sera verificado.
    * @return boolean O valor verdade resultante.
    */
   public static boolean ehPotenciaDeDois(int numero){
     return (numero > 0) && ((numero & (numero - 1)) == 0);
   } //Fim ehPotenciaDeDois
 
+
+  /**
+   * Converter uma lista dinamica de bits, um bit para cada posicao, para
+   * um vetor, tambem de bits, mas em grupos de 8 (isto eh byte) em cada posicao.
+   *
+   * @param  bits    A lista de bits.
+   * @return int[]   O vetor de bytes por cada posicao.
+   */
   public static int[] converterBitsParaBytes(List<Integer> bits){
-    return new int[0];
-  }
+    int numBytes = (bits.size() + 7) / 8; //Arredonda para cima
+    int[] bytes = new int[numBytes];
+
+    for (int i = 0; i < bits.size(); i++) {
+      int indiceByte = i / 8;
+      int indiceBit = i % 8;
+
+      if (bits.get(i) == 1) {
+        //Define o bit correto no byte usando uma mascara e o operador OR
+        bytes[indiceByte] |= (1 << (7 - indiceBit));
+      }
+    }
+    return bytes;
+  } //Fim converterBitsParaBytes
 
 } //Fim da classe Util
