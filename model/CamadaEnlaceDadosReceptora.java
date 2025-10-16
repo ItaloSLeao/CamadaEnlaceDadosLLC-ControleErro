@@ -211,28 +211,52 @@ public class CamadaEnlaceDadosReceptora {
     final char ESCAPE = '/';
 
     ArrayList<Integer> quadroOriginalList = new ArrayList<>();
-    boolean escapeLido = false; //Flag para saber se o caractere anterior foi um ESCAPE
 
-    for (int i = 0; i < quadro.length; i++) { //Itera sobre os bytes em quadro[]
+    boolean dentroDoQuadro = false; //Controla se esta dentro do quadro, para determinar o fim
+    boolean proximoEhDado = false; //Controla a relacao do escape lido anteriormente com o byte atual
+
+    for (int i = 0; i < quadro.length; i++) {
+
       int caractere = quadro[i];
 
-      if (escapeLido) {
-        //Se o escape foi lido antes, o caractere atual eh um dado literal
+      if (proximoEhDado) {
         quadroOriginalList.add(caractere);
-        escapeLido = false;
-      } else { //Se o caractere anterior nao foi um escape
+        proximoEhDado = false;
+        continue;
+      }
+
+      if (caractere == FLAG) {
+        //Se estava fora de um quadro, esta FLAG inicia um novo.
+        if (!dentroDoQuadro) {
+          dentroDoQuadro = true;
+        }
+        //Se estava dentro de um quadro, esta FLAG o finaliza.
+        else {
+          dentroDoQuadro = false;
+          
+          //Logica de parada: verifica se existe um proximo byte no array.
+          boolean existeProximoByte = (i + 1) < quadro.length;
+          
+          //Se nao existe proximo byte, ou se o proximo byte nao eh FLAG,
+          //a transmissao eh considerada finalizada e o laco eh interrompido.
+          if (!existeProximoByte || (existeProximoByte && quadro[i + 1] != FLAG)) {
+            break; 
+          }
+          //Se a condicao acima for falsa, significa que o proximo byte e uma FLAG
+          //que iniciara um novo quadro na proxima iteracao, entao o laco continua.
+        }
+      }
+      else if (dentroDoQuadro) {
         if (caractere == ESCAPE) {
-          escapeLido = true;
-        } else if (caractere == FLAG) {
-          //Ignora o caractere, descartando-o
+          proximoEhDado = true;
         } else {
           quadroOriginalList.add(caractere);
-        } //Fim if-else if
-      } //Fim if-else escapeLido
-    } //Fim for
+        }
+      }
+      
+    }
 
     int[] quadroOriginal = new int[quadroOriginalList.size()];
-
     for (int i = 0; i < quadroOriginalList.size(); i++) {
       quadroOriginal[i] = quadroOriginalList.get(i);
     }
@@ -501,7 +525,7 @@ public class CamadaEnlaceDadosReceptora {
   
   
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
-    
+
     //1. Converter o quadro recebido para uma lista de bits
     List<Integer> bitsRecebidos = new ArrayList<>();
     for (int byteAtual : quadro) {
