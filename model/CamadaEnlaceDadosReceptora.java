@@ -264,7 +264,7 @@ public class CamadaEnlaceDadosReceptora {
         if (dentroDoQuadro) {
           //FLAG de fim de quadro encontrada. Processa o que acumulou.
           if (!cargaUtilBruta.isEmpty()) {
-              //Implementacao do de-stuffing com uma funcao deStuffBits
+              //Implementacao do desestufamento com uma funcao desestufarBits
               ArrayList<Integer> cargaUtilLimpa = desestufarBits(cargaUtilBruta);
               quadroOriginalList.addAll(cargaUtilLimpa);
               cargaUtilBruta.clear(); //Limpa para o proximo quadro
@@ -281,6 +281,11 @@ public class CamadaEnlaceDadosReceptora {
         } //Fim if
       } //Fim if-else
     } //Fim for
+
+    if(!cargaUtilBruta.isEmpty()){
+      ArrayList<Integer> cargaUtilLimpa = desestufarBits(cargaUtilBruta);
+      quadroOriginalList.addAll(cargaUtilLimpa);
+    }
 
     int[] quadroOriginal = new int[quadroOriginalList.size()];
 
