@@ -16,7 +16,7 @@ import util.Util;
  * erros e encaminhar a mensagem para a camada de aplicacao.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 16/10/2025 (Ultima alteracao)
+ * @version 20/10/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaEnlaceDadosReceptora {
@@ -56,6 +56,9 @@ public class CamadaEnlaceDadosReceptora {
 
           controller.reativar(); //Reativa o menu da aplicacao
         });
+
+        System.err.println("A Camada de Enlace de Dados Receptora detectou um erro de transmissao!");
+        controller.beep();
 
         return; //Quebra a transmissao
       }
@@ -396,8 +399,9 @@ public class CamadaEnlaceDadosReceptora {
       catch (Exception e){e.printStackTrace();}
       } //Fim for      
     }
-    
 
+    System.out.println("\n");
+    
     return quadroControleErros;
 
   } //Fim de camadaEnlaceDadosReceptoraControleDeErros

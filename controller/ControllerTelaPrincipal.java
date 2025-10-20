@@ -1,11 +1,11 @@
 package controller;
 
-//Importacoes para o funcionamento do metodo de inicializacao da interface implementada
+import java.applet.Applet;
+import java.applet.AudioClip;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.Arrays;
 
-//Importacoes para o funcionamento correto da aplicacao JavaFX
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -29,7 +29,7 @@ import model.AplicacaoTransmissora;
  * interacoes com os menus.
  *
  * @author Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 20/10/2025 (Ultima alteracao)
  * @since 02/10/2025 (Inicio)
  */
 public class ControllerTelaPrincipal implements Initializable {
@@ -368,5 +368,14 @@ public class ControllerTelaPrincipal implements Initializable {
   public int getVelocidade() {
     return milissegundos;
   } //Fim getVelocidade
+
+  public void beep(){
+    try {
+      AudioClip beep = Applet.newAudioClip(getClass().getResource("/assets/beep.wav"));
+      beep.play();
+    } catch (Exception e) {
+      System.err.println("Excecao no beep do controller" + e.getStackTrace());
+    }
+  }
 
 } //Fim da classe ControllerTelaPrincipal
