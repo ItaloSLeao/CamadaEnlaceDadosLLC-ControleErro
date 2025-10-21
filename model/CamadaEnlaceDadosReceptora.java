@@ -498,20 +498,20 @@ public class CamadaEnlaceDadosReceptora {
    */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
     
-    // Mesmo polinômio do transmissor
+    //Mesmo polinômio do transmissor
     long polinomio = 0x04C11DB7L;
     
-    // 1. Juntar todos os bytes (dados + CRC) em um único BigInteger
+    //Juntar todos os bytes (dados + CRC) em um unico BigInteger
     BigInteger dadosComCRC = BigInteger.ZERO;
     for (int i = 0; i < quadro.length; i++) {
-        dadosComCRC = dadosComCRC.shiftLeft(8);
-        dadosComCRC = dadosComCRC.or(BigInteger.valueOf(quadro[i] & 0xFF));
+      dadosComCRC = dadosComCRC.shiftLeft(8);
+      dadosComCRC = dadosComCRC.or(BigInteger.valueOf(quadro[i] & 0xFF));
     }
     
-    // 2. Anexar 32 bits zero (deslocar 32 posições para esquerda)
+    //Anexar 32 bits zero (deslocar 32 posicoes para esquerda)
     BigInteger dadosComZeros = dadosComCRC.shiftLeft(32);
     
-    // 3. Fazer a divisão polinomial (XOR) bit a bit
+    //Fazer a divisão polinomial (XOR) bit a bit
     int bitLength = dadosComZeros.bitLength();
     if (bitLength == 0) bitLength = 1;
     
@@ -521,30 +521,30 @@ public class CamadaEnlaceDadosReceptora {
         resto = resto.shiftLeft(1);
         
         if (dadosComZeros.testBit(i)) {
-            resto = resto.setBit(0);
+          resto = resto.setBit(0);
         }
         
         if (resto.bitLength() == 33 && resto.testBit(32)) {
-            resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
+          resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
         }
     }
     
-    // 4. Verificar se o resto é zero
+    //Verificar se o resto eh zero
     resto = resto.and(BigInteger.valueOf(0xFFFFFFFFL));
     
     if (resto.equals(BigInteger.ZERO)) {
-        // CRC válido - remover os 4 bytes do CRC
-        int tamanhoOriginal = quadro.length - 4;
-        if (tamanhoOriginal < 0) {
-            return null;
-        }
-        
-        int[] quadroOriginal = new int[tamanhoOriginal];
-        System.arraycopy(quadro, 0, quadroOriginal, 0, tamanhoOriginal);
-        return quadroOriginal;
+      //CRC valido - remover os 4 bytes do CRC
+      int tamanhoOriginal = quadro.length - 4;
+      if (tamanhoOriginal < 0) {
+          return null;
+      }
+      
+      int[] quadroOriginal = new int[tamanhoOriginal];
+      System.arraycopy(quadro, 0, quadroOriginal, 0, tamanhoOriginal);
+      return quadroOriginal;
     } else {
-        // Erro detectado
-        return null;
+      //Erro detectado
+      return null;
     }
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCRC

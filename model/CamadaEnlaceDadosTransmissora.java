@@ -109,9 +109,7 @@ public class CamadaEnlaceDadosTransmissora {
    */
   private static int[] camadaEnlaceDadosTransmissoraEnquadramentoContagemDeCaracteres(int quadro[]) {
 
-    /* O tamanho do quadro de caracteres eh ajustado para 3. Isso eh justificavel,
-     * haja vista que na camada fisica cada inteiro de quadro[] contera 4 bytes (1 byte de controle + 3 de carga util) */
-    final int tamanhoQuadro = 3;
+    final int tamanhoQuadro = 1;
     int numCaracteres = quadro.length;
 
     //Calcula quantos blocos de carga util serao necessarios para enquadrar a mensagem em quadro[]
@@ -123,8 +121,8 @@ public class CamadaEnlaceDadosTransmissora {
 
     int indiceSaida = 0; //Indice para controlar o armazenamento dos caracteres no novo quadro
 
-    for (int i = 0; i < numCaracteres; i += tamanhoQuadro) { //Faz o enquadramento de 3 em 3
-      //Calcula quantos caracteres ha no 'bloco' (quadro de carga util) de 1 a 3
+    for (int i = 0; i < numCaracteres; i += tamanhoQuadro) { //Faz o enquadramento
+      //Calcula quantos caracteres ha no quadro
       int charsQuadro = Math.min(tamanhoQuadro, numCaracteres - i);
 
       quadroEnquadrado[indiceSaida++] = charsQuadro + 1;
@@ -152,7 +150,7 @@ public class CamadaEnlaceDadosTransmissora {
    */
   private static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBytes(int quadro[]) {
 
-    final int TAMANHO_CARGA_UTIL = 5; //Numero fixo maximo de caracteres por quadro de carga util
+    final int TAMANHO_CARGA_UTIL = 1; //Numero fixo maximo de caracteres por quadro de carga util
     final char FLAG = 'i';
     final char ESCAPE = '/';
 
@@ -216,7 +214,7 @@ public class CamadaEnlaceDadosTransmissora {
   private static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBits(int quadro[]) {
 
     final int FLAG = 0b01111110; //01111110
-    final int TAMANHO_CARGA_UTIL = 5; //Maximo de 5 bytes de dados por quadro
+    final int TAMANHO_CARGA_UTIL = 1; //Maximo de 5 bytes de dados por quadro
 
     ArrayList<Integer> quadroEnquadradoList = new ArrayList<>();
     quadroEnquadradoList.add(FLAG);
