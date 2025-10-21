@@ -77,12 +77,10 @@ public class ControllerTelaPrincipal implements Initializable {
    * suas respectivas opcoes, agrupar as ImageViews em arrays para facilitar a
    * manipulacao e definir as acoes (event handlers) para os botoes e o slider.
    *
-   * @param location  A localizacao usada para resolver caminhos relativos para o
-   *                  objeto raiz (pode ser null).
-   * @param resources Os recursos usados para localizar o objeto raiz (pode ser
-   *                  null).
+   * @param location  A localizacao para resolver caminhos relativos para o no raiz.
+   * @param resources Os recursos usados para localizar o no raiz.
    */
-  @Override //Notacao de sobrescricao
+  @Override
   public void initialize(URL location, ResourceBundle resources) {
     lowImagens = new ImageView[] { lowImagem0, lowImagem1, lowImagem2, lowImagem3, lowImagem4, lowImagem5, lowImagem6,
       lowImagem7, lowImagem8, lowImagem9, lowImagem10, lowImagem11 }; //As imagens LOW sao vetorizadas
@@ -126,7 +124,7 @@ public class ControllerTelaPrincipal implements Initializable {
 
       } else{
 
-        if (getCodificacao() == 1 && getEnquadramento() == 4) { //Se as escolhas forem V. Camada Fisica e Cod. Binaria
+        if (getCodificacao() == 1 && getEnquadramento() == 4) { //Se V. Camada Fisica && Cod. Binaria
           Alert alert = new Alert(AlertType.INFORMATION);
           alert.getDialogPane().getStylesheets().add(
             ControllerTelaPrincipal.class.getResource("/view/styles.css").toExternalForm());
@@ -233,7 +231,7 @@ public class ControllerTelaPrincipal implements Initializable {
         highImagens[0].setVisible(true);
       }
 
-      sinalAnterior = bit; //O ultimo sinal eh armazenado com o bit atual
+      sinalAnterior = bit;
     }); //Fim runLater
   } //Fim sinalizar
 
@@ -369,6 +367,11 @@ public class ControllerTelaPrincipal implements Initializable {
     return milissegundos;
   } //Fim getVelocidade
 
+  /**
+   * Faz beep.
+   *
+   * @return void
+   */
   public void beep(){
     try {
       AudioClip beep = Applet.newAudioClip(getClass().getResource("/assets/beep.wav"));
