@@ -498,7 +498,7 @@ public class CamadaEnlaceDadosReceptora {
    */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
     
-    //Mesmo polinômio do transmissor
+    //Mesmo polinomio do transmissor
     long polinomio = 0x04C11DB7L;
     
     //Juntar todos os bytes (dados + CRC) em um unico BigInteger
@@ -508,25 +508,22 @@ public class CamadaEnlaceDadosReceptora {
       dadosComCRC = dadosComCRC.or(BigInteger.valueOf(quadro[i] & 0xFF));
     }
     
-    //Anexar 32 bits zero (deslocar 32 posicoes para esquerda)
-    BigInteger dadosComZeros = dadosComCRC.shiftLeft(32);
-    
-    //Fazer a divisão polinomial (XOR) bit a bit
-    int bitLength = dadosComZeros.bitLength();
+    //Fazer a divisao polinomial (XOR) bit a bit
+    int bitLength = dadosComCRC.bitLength(); //Usa o bitLength do quadro recebido
     if (bitLength == 0) bitLength = 1;
     
     BigInteger resto = BigInteger.ZERO;
     
     for (int i = bitLength - 1; i >= 0; i--) {
-        resto = resto.shiftLeft(1);
-        
-        if (dadosComZeros.testBit(i)) {
-          resto = resto.setBit(0);
-        }
-        
-        if (resto.bitLength() == 33 && resto.testBit(32)) {
-          resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
-        }
+      resto = resto.shiftLeft(1);
+      
+      if (dadosComCRC.testBit(i)) { //Usa dadosComCRC
+        resto = resto.setBit(0);
+      }
+      
+      if (resto.bitLength() == 33 && resto.testBit(32)) {
+        resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
+      }
     }
     
     //Verificar se o resto eh zero
@@ -536,7 +533,7 @@ public class CamadaEnlaceDadosReceptora {
       //CRC valido - remover os 4 bytes do CRC
       int tamanhoOriginal = quadro.length - 4;
       if (tamanhoOriginal < 0) {
-          return null;
+        return null; //Quadro invalido
       }
       
       int[] quadroOriginal = new int[tamanhoOriginal];
