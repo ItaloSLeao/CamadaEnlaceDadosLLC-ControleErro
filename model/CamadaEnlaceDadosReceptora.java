@@ -149,11 +149,32 @@ public class CamadaEnlaceDadosReceptora {
 
     int indiceEntrada = 0; //Controla a posicao de leitura no quadroEnquadrado
 
-    while (indiceEntrada < quadro.length) {
+    //Altera o loop para verificar ativamente as condicoes de parada,
+    //em vez de apenas iterar sobre o comprimento do array.
+    while (true) {
+      
+      //Condicao de parada 1: Atingiu o fim fisico do array.
+      if (indiceEntrada >= quadro.length) {
+        break; //Fim da transmissao
+      }
+
       //Le o primeiro byte do quadro, que eh o byte de contagem.
       int tamanhoDoBloco = quadro[indiceEntrada++];
 
+      //Condicao de parada 2: Encontrou um byte de contagem 0.
+      //Isso indica padding ou o fim logico da transmissao.
+      if (tamanhoDoBloco == 0) {
+        break; //Fim logico da transmissao
+      }
+
       int caracteresCargaUtil = tamanhoDoBloco - 1;
+
+      //Condicao de seguranca: Verifica se o byte de contagem eh valido.
+      //Se for corrompido e apontar para fora do array, lanca a excecao
+      //que eh esperada e tratada pela camadaEnlaceDadosReceptora.
+      if (indiceEntrada + caracteresCargaUtil > quadro.length) {
+        throw new ArrayIndexOutOfBoundsException("Contagem de caracteres corrompida");
+      }
 
       //Le os caracteres da carga util e os adiciona a lista
       for (int i = 0; i < caracteresCargaUtil; i++) {
