@@ -508,48 +508,62 @@ public class CamadaEnlaceDadosTransmissora {
    */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
 
-    //Converter o array de caracteres para uma lista de bits
+    //1. DESEMPACOTAR: Converter int[] (bytes) para List<Integer> (bits)
     List<Integer> bitsDados = new ArrayList<>();
     for (int caractere : quadro) {
-      for (int i = 7; i >= 0; i--) {
+      //Adiciona os 8 bits de cada byte ao fluxo
+      for (int i = 7; i >= 0; i--) { //Do bit mais significativo (7) ao menos (0)
         bitsDados.add((caractere >> i) & 1);
       }
     }
 
-    //Calcular o numero de bits de paridade (r) necessarios
+    //2. CALCULAR 'r': Numero de bits de paridade
     int m = bitsDados.size();
     int r = 0;
+    //Encontra 'r' tal que 2^r >= m + r + 1
     while ((1 << r) < m + r + 1) {
       r++;
     }
 
-    //Criar a estrutura da palavra de codigo, inserindo posicionadores para os bits de paridade
+    //3. INSERIR: Criar a estrutura da palavra-codigo
     List<Integer> bitsComParidade = new ArrayList<>();
     int totalBits = m + r;
-    int indiceDados = 0;
+    int indiceDados = 0; //Ponteiro para 'bitsDados'
     for (int posicao = 1; posicao <= totalBits; posicao++) {
       if (Util.ehPotenciaDeDois(posicao)) {
-        bitsComParidade.add(0); //Posicao do bit de paridade
+        //Posicao de paridade, adiciona um placeholder (0)
+        bitsComParidade.add(0);
       } else {
-        bitsComParidade.add(bitsDados.get(indiceDados++)); //Posicao do bit de dados
+        //Posicao de dados, adiciona o bit de dados
+        bitsComParidade.add(bitsDados.get(indiceDados++));
       }
     }
 
-    //Calcular o valor de cada bit de paridade
+    //4. CALCULAR PARIDADE: (usando paridade PAR)
     for (int i = 0; i < r; i++) {
-      int posParidade = 1 << i;
+      int posParidade = 1 << i; //posParidade = 1, 2, 4, 8...
       int paridade = 0;
+
+      //Itera por todos os bits da palavra-codigo para ver quem
+      //este bit de paridade 'posParidade' deve verificar.
       for (int j = 1; j <= totalBits; j++) {
-        //Verifica todos os bits que este bit de paridade cobre.
+        //Se a posicao 'j' tem o bit 'i' setado em sua representacao binaria...
+        //(ex: P1 (i=0) verifica 1, 3, 5, 7, 9, 11...)
+        //(ex: P2 (i=1) verifica 2, 3, 6, 7, 10, 11...)
         if ((j & posParidade) != 0) {
+          //...entao este bit 'j' eh coberto por 'posParidade'.
+          //Fazemos XOR com o valor do bit na posicao j
+          //(j-1 para converter de 1-based para 0-based index)
           paridade ^= bitsComParidade.get(j - 1);
         }
       }
-      //Define o bit de paridade para que o XOR total do grupo seja 0 (paridade par)
+      //O valor final de 'paridade' eh o que o bit de paridade DEVE ser
+      //para que o XOR total do grupo seja 0.
+      //(Ja que o proprio bit de paridade foi incluido no XOR como 0)
       bitsComParidade.set(posParidade - 1, paridade);
     }
 
-    //Converter a lista de bits de volta para um array de bytes
+    //5. RE-EMPACOTAR: Converter List<Integer> (bits) de volta para int[] (bytes)
     return Util.converterBitsParaBytes(bitsComParidade);
 
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming
