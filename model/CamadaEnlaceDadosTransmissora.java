@@ -109,7 +109,7 @@ public class CamadaEnlaceDadosTransmissora {
    */
   private static int[] camadaEnlaceDadosTransmissoraEnquadramentoContagemDeCaracteres(int quadro[]) {
 
-    final int tamanhoQuadro = 1;
+    final int tamanhoQuadro = 3;
     int numCaracteres = quadro.length;
 
     //Calcula quantos blocos de carga util serao necessarios para enquadrar a mensagem em quadro[]
@@ -150,7 +150,7 @@ public class CamadaEnlaceDadosTransmissora {
    */
   private static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBytes(int quadro[]) {
 
-    final int TAMANHO_CARGA_UTIL = 1; //Numero fixo maximo de caracteres por quadro de carga util
+    final int TAMANHO_CARGA_UTIL = 5; //Numero fixo maximo de caracteres por quadro de carga util
     final char FLAG = 'i';
     final char ESCAPE = '/';
 
@@ -214,7 +214,7 @@ public class CamadaEnlaceDadosTransmissora {
   private static int[] camadaEnlaceDadosTransmissoraEnquadramentoInsercaoDeBits(int quadro[]) {
 
     final int FLAG = 0b01111110; //01111110
-    final int TAMANHO_CARGA_UTIL = 1; //Maximo de 5 bytes de dados por quadro
+    final int TAMANHO_CARGA_UTIL = 5; //Maximo de 5 bytes de dados por quadro
 
     ArrayList<Integer> quadroEnquadradoList = new ArrayList<>();
     quadroEnquadradoList.add(FLAG);
@@ -440,57 +440,7 @@ public class CamadaEnlaceDadosTransmissora {
    */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
     
-    // Polinômio CRC-32: 0x04C11DB7 (formato normal)
-    // Em binário: 100000100110000010001110110110111
-    long polinomio = 0x04C11DB7L;
-    
-    // 1. Juntar todos os bytes em um único BigInteger
-    BigInteger dados = BigInteger.ZERO;
-    for (int i = 0; i < quadro.length; i++) {
-        dados = dados.shiftLeft(8);
-        dados = dados.or(BigInteger.valueOf(quadro[i] & 0xFF));
-    }
-    
-    // 2. Anexar 32 bits zero (deslocar 32 posições para esquerda)
-    BigInteger dadosComZeros = dados.shiftLeft(32);
-    
-    // 3. Converter para array de bits para fazer a divisão polinomial
-    int bitLength = dadosComZeros.bitLength();
-    if (bitLength == 0) bitLength = 1; // Evitar bitLength 0
-    
-    // 4. Fazer a divisão polinomial (XOR) bit a bit
-    BigInteger resto = BigInteger.ZERO;
-    
-    for (int i = bitLength - 1; i >= 0; i--) {
-        // Deslocar o resto para esquerda
-        resto = resto.shiftLeft(1);
-        
-        // Pegar o próximo bit dos dados
-        if (dadosComZeros.testBit(i)) {
-            resto = resto.setBit(0);
-        }
-        
-        // Se o bit mais significativo do resto estiver setado, fazer XOR com polinômio
-        if (resto.bitLength() == 33 && resto.testBit(32)) {
-            resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
-        }
-    }
-    
-    // 5. O resto tem no máximo 32 bits - garantir isso
-    resto = resto.and(BigInteger.valueOf(0xFFFFFFFFL));
-    
-    // 6. Criar novo quadro com dados + CRC
-    int[] quadroComCRC = new int[quadro.length + 4];
-    System.arraycopy(quadro, 0, quadroComCRC, 0, quadro.length);
-    
-    // 7. Adicionar os 4 bytes do CRC em ordem big-endian
-    long restoLong = resto.longValue();
-    quadroComCRC[quadro.length] = (int) ((restoLong >> 24) & 0xFF);
-    quadroComCRC[quadro.length + 1] = (int) ((restoLong >> 16) & 0xFF);
-    quadroComCRC[quadro.length + 2] = (int) ((restoLong >> 8) & 0xFF);
-    quadroComCRC[quadro.length + 3] = (int) (restoLong & 0xFF);
-    
-    return quadroComCRC;
+    return quadro;
     
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCRC
   
@@ -508,63 +458,7 @@ public class CamadaEnlaceDadosTransmissora {
    */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
 
-    //1. DESEMPACOTAR: Converter int[] (bytes) para List<Integer> (bits)
-    List<Integer> bitsDados = new ArrayList<>();
-    for (int caractere : quadro) {
-      //Adiciona os 8 bits de cada byte ao fluxo
-      for (int i = 7; i >= 0; i--) { //Do bit mais significativo (7) ao menos (0)
-        bitsDados.add((caractere >> i) & 1);
-      }
-    }
-
-    //2. CALCULAR 'r': Numero de bits de paridade
-    int m = bitsDados.size();
-    int r = 0;
-    //Encontra 'r' tal que 2^r >= m + r + 1
-    while ((1 << r) < m + r + 1) {
-      r++;
-    }
-
-    //3. INSERIR: Criar a estrutura da palavra-codigo
-    List<Integer> bitsComParidade = new ArrayList<>();
-    int totalBits = m + r;
-    int indiceDados = 0; //Ponteiro para 'bitsDados'
-    for (int posicao = 1; posicao <= totalBits; posicao++) {
-      if (Util.ehPotenciaDeDois(posicao)) {
-        //Posicao de paridade, adiciona um placeholder (0)
-        bitsComParidade.add(0);
-      } else {
-        //Posicao de dados, adiciona o bit de dados
-        bitsComParidade.add(bitsDados.get(indiceDados++));
-      }
-    }
-
-    //4. CALCULAR PARIDADE: (usando paridade PAR)
-    for (int i = 0; i < r; i++) {
-      int posParidade = 1 << i; //posParidade = 1, 2, 4, 8...
-      int paridade = 0;
-
-      //Itera por todos os bits da palavra-codigo para ver quem
-      //este bit de paridade 'posParidade' deve verificar.
-      for (int j = 1; j <= totalBits; j++) {
-        //Se a posicao 'j' tem o bit 'i' setado em sua representacao binaria...
-        //(ex: P1 (i=0) verifica 1, 3, 5, 7, 9, 11...)
-        //(ex: P2 (i=1) verifica 2, 3, 6, 7, 10, 11...)
-        if ((j & posParidade) != 0) {
-          //...entao este bit 'j' eh coberto por 'posParidade'.
-          //Fazemos XOR com o valor do bit na posicao j
-          //(j-1 para converter de 1-based para 0-based index)
-          paridade ^= bitsComParidade.get(j - 1);
-        }
-      }
-      //O valor final de 'paridade' eh o que o bit de paridade DEVE ser
-      //para que o XOR total do grupo seja 0.
-      //(Ja que o proprio bit de paridade foi incluido no XOR como 0)
-      bitsComParidade.set(posParidade - 1, paridade);
-    }
-
-    //5. RE-EMPACOTAR: Converter List<Integer> (bits) de volta para int[] (bytes)
-    return Util.converterBitsParaBytes(bitsComParidade);
+    return quadro;
 
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming
 

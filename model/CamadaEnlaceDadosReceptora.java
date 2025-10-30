@@ -519,51 +519,7 @@ public class CamadaEnlaceDadosReceptora {
    */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
     
-    //Mesmo polinomio do transmissor
-    long polinomio = 0x04C11DB7L;
-    
-    //Juntar todos os bytes (dados + CRC) em um unico BigInteger
-    BigInteger dadosComCRC = BigInteger.ZERO;
-    for (int i = 0; i < quadro.length; i++) {
-      dadosComCRC = dadosComCRC.shiftLeft(8);
-      dadosComCRC = dadosComCRC.or(BigInteger.valueOf(quadro[i] & 0xFF));
-    }
-    
-    //Fazer a divisao polinomial (XOR) bit a bit
-    int bitLength = dadosComCRC.bitLength(); //Usa o bitLength do quadro recebido
-    if (bitLength == 0) bitLength = 1;
-    
-    BigInteger resto = BigInteger.ZERO;
-    
-    for (int i = bitLength - 1; i >= 0; i--) {
-      resto = resto.shiftLeft(1);
-      
-      if (dadosComCRC.testBit(i)) { //Usa dadosComCRC
-        resto = resto.setBit(0);
-      }
-      
-      if (resto.bitLength() == 33 && resto.testBit(32)) {
-        resto = resto.xor(BigInteger.valueOf(polinomio).shiftLeft(32 - 32));
-      }
-    }
-    
-    //Verificar se o resto eh zero
-    resto = resto.and(BigInteger.valueOf(0xFFFFFFFFL));
-    
-    if (resto.equals(BigInteger.ZERO)) {
-      //CRC valido - remover os 4 bytes do CRC
-      int tamanhoOriginal = quadro.length - 4;
-      if (tamanhoOriginal < 0) {
-        return null; //Quadro invalido
-      }
-      
-      int[] quadroOriginal = new int[tamanhoOriginal];
-      System.arraycopy(quadro, 0, quadroOriginal, 0, tamanhoOriginal);
-      return quadroOriginal;
-    } else {
-      //Erro detectado
-      return null;
-    }
+    return quadro;
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCRC
   
@@ -581,78 +537,7 @@ public class CamadaEnlaceDadosReceptora {
    */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
 
-    //1. DESEMPACOTAR: Converter int[] (bytes) para List<Integer> (bits)
-    List<Integer> bitsRecebidos = new ArrayList<>();
-    for (int byteAtual : quadro) {
-      for (int i = 7; i >= 0; i--) {
-        bitsRecebidos.add((byteAtual >> i) & 1);
-      }
-    }
-
-    int totalBits = bitsRecebidos.size();
-    if (totalBits == 0) {
-      return new int[0]; //Quadro vazio
-    }
-
-    //2. CALCULAR SINDROME:
-    int r = 0;
-    while ((1 << r) < totalBits + 1) {
-      r++;
-    }
-
-    int sindrome = 0;
-    for (int i = 0; i < r; i++) {
-      int posParidade = 1 << i; //1, 2, 4, 8...
-      int paridadeCalculada = 0;
-
-      //Verifica todos os bits cobertos por este bit de paridade
-      for (int j = 1; j <= totalBits; j++) {
-        if ((j & posParidade) != 0) {
-          //j-1 para 0-based index
-          paridadeCalculada ^= bitsRecebidos.get(j - 1);
-        }
-      }
-
-      //Se a paridade calculada for 1 (impar), o cheque falhou.
-      //Adicionamos a posicao deste bit de paridade a sindrome.
-      if (paridadeCalculada != 0) {
-        sindrome |= posParidade;
-      }
-    }
-
-    //3. LOCALIZAR E CORRIGIR ERRO
-    if (sindrome != 0) {
-      System.out.println("\n>> Hamming: Erro detectado na posicao de bit: " + sindrome);
-      
-      //'sindrome' eh 1-based, mas a lista eh 0-based
-      int bitIndex = sindrome - 1; 
-
-      if (bitIndex < totalBits) {
-        //Inverte o bit (0 -> 1 ou 1 -> 0)
-        int bitErrado = bitsRecebidos.get(bitIndex);
-        bitsRecebidos.set(bitIndex, bitErrado ^ 1); //^ 1 inverte
-        System.out.println(">> Bit corrigido de " + bitErrado + " para " + (bitErrado ^ 1));
-      } else {
-        //A sindrome aponta para uma posicao que nao existe.
-        //Isso indica um erro multiplo (incorrigivel).
-        System.err.println(">> Erro: Sindrome " + sindrome + " eh invalida. Erro incorrigivel.");
-        return null; //Retorna null para sinalizar erro a camada superior
-      }
-    }
-
-    //4. EXTRAIR DADOS
-    List<Integer> bitsDados = new ArrayList<>();
-    for (int posHamming = 1; posHamming <= totalBits; posHamming++) {
-      //Se a posicao NAO eh potencia de 2, eh um bit de dado
-      if (!Util.ehPotenciaDeDois(posHamming)) {
-        if(posHamming - 1 < bitsRecebidos.size()){ //Garante que nao lemos padding
-          bitsDados.add(bitsRecebidos.get(posHamming - 1));
-        }
-      }
-    }
-
-    //5. RE-EMPACOTAR: Converter List<Integer> (bits de dados) para int[] (bytes)
-    return Util.converterBitsParaBytes(bitsDados);
+    return quadro;
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming
 
