@@ -440,7 +440,54 @@ public class CamadaEnlaceDadosTransmissora {
    */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCRC(int[] quadro){
     
-    return quadro;
+    //Polinomio CRC-32 IEEE: x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
+    //Em binario: 100000100110000010001110110110111 (33 bits)
+    BigInteger polinomio = new BigInteger("100000100110000010001110110110111", 2);
+
+    //Converte o quadro para uma string de bits
+    StringBuilder bitsMensagem = new StringBuilder();
+    for (int byteDado : quadro) {
+        String bits = String.format("%8s", Integer.toBinaryString(byteDado & 0xFF)).replace(' ', '0');
+        bitsMensagem.append(bits);
+    }
+
+    //Adiciona 32 zeros ao final para a divisao polinomial
+    bitsMensagem.append("00000000000000000000000000000000");
+
+    //Converte para BigInteger
+    BigInteger mensagem = new BigInteger(bitsMensagem.toString(), 2);
+
+    //Realiza a divisao polinomial usando XOR
+    int tamanhoPolinomio = 33; //Grau 32 + 1
+    int tamanhoBitsMensagem = bitsMensagem.length();
+
+    //Faz a divisao bit a bit com XOR
+    for (int i = 0; i <= tamanhoBitsMensagem - tamanhoPolinomio; i++) {
+        //Verifica se o bit mais significativo eh 1
+        if (mensagem.testBit(tamanhoBitsMensagem - 1 - i)) {
+            //Desloca o polinomio para alinhar com a posicao atual e faz XOR
+            BigInteger polinomioDeslocado = polinomio.shiftLeft(tamanhoBitsMensagem - tamanhoPolinomio - i);
+            mensagem = mensagem.xor(polinomioDeslocado);
+        }
+    }
+
+    //O resto (CRC) sao os ultimos 32 bits
+    BigInteger crc = mensagem;
+
+    //Converte o CRC para string binaria com 32 bits (completa com zeros a esquerda)
+    String crcBits = String.format("%32s", crc.toString(2)).replace(' ', '0');
+
+    //Cria novo quadro com os 4 bytes do CRC adicionados
+    int[] quadroComCRC = new int[quadro.length + 4];
+    System.arraycopy(quadro, 0, quadroComCRC, 0, quadro.length);
+
+    //Adiciona os 4 bytes do CRC ao final
+    for (int i = 0; i < 4; i++) {
+        String byteBits = crcBits.substring(i * 8, (i + 1) * 8);
+        quadroComCRC[quadro.length + i] = Integer.parseInt(byteBits, 2);
+    }
+
+    return quadroComCRC;
     
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCRC
   

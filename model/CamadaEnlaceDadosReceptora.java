@@ -519,7 +519,44 @@ public class CamadaEnlaceDadosReceptora {
    */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCRC(int[] quadro){
     
-    return quadro;
+    //Polinomio CRC-32 IEEE: 100000100110000010001110110110111 (33 bits)
+    BigInteger polinomio = new BigInteger("100000100110000010001110110110111", 2);
+
+    //Converte todo o quadro (mensagem + CRC) para bits
+    StringBuilder bitsCompleto = new StringBuilder();
+    for (int byteDado : quadro) {
+        String bits = String.format("%8s", Integer.toBinaryString(byteDado & 0xFF)).replace(' ', '0');
+        bitsCompleto.append(bits);
+    }
+
+    //Converte para BigInteger
+    BigInteger mensagem = new BigInteger(bitsCompleto.toString(), 2);
+
+    //Realiza a divisao polinomial usando XOR
+    int tamanhoPolinomio = 33; //Grau 32 + 1
+    int tamanhoBitsMensagem = bitsCompleto.length();
+
+    //Faz a divisao bit a bit com XOR
+    for (int i = 0; i <= tamanhoBitsMensagem - tamanhoPolinomio; i++) {
+        //Verifica se o bit mais significativo eh 1
+        if (mensagem.testBit(tamanhoBitsMensagem - 1 - i)) {
+            //Desloca o polinomio para alinhar com a posicao atual e faz XOR
+            BigInteger polinomioDeslocado = polinomio.shiftLeft(tamanhoBitsMensagem - tamanhoPolinomio - i);
+            mensagem = mensagem.xor(polinomioDeslocado);
+        }
+    }
+
+    //O resto deve ser zero se nao houver erro
+    if (!mensagem.equals(BigInteger.ZERO)) {
+        return null; //Erro detectado!
+    }
+
+    //Retorna a mensagem original sem os ultimos 4 bytes (CRC)
+    int tamanhoOriginal = quadro.length - 4;
+    int[] quadroOriginal = new int[tamanhoOriginal];
+    System.arraycopy(quadro, 0, quadroOriginal, 0, tamanhoOriginal);
+
+    return quadroOriginal;
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCRC
   
