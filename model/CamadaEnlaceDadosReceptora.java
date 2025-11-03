@@ -624,7 +624,7 @@ public class CamadaEnlaceDadosReceptora {
 
           alert.setTitle("ERRO DETECTADO");
           alert.setHeaderText(null);
-          alert.setContentText("A Camada de Enlace de Dados Receptora detectou um erro de transmissao!\nAguardando retransmissao");
+          alert.setContentText("A Camada de Enlace de Dados Receptora detectou um erro de transmissao! Aguardando retransmissao");
           alert.showAndWait();
 
           //Nao reativa a GUI, pois esta esperando retransmissao
@@ -646,9 +646,9 @@ public class CamadaEnlaceDadosReceptora {
 
       //Envia o ACK de sucesso fazendo chamada estatica
       System.out.println("CAMADA ENLACE (RX): Mensagem recebida com sucesso. Enviando ACK...");
-      int[] ack = { 1 << 31 }; // Quadro de ACK (ex: bit 31 = 1)
+      int[] ack = { 1 << 31 }; //Quadro de ACK (ex: bit 31 = 1)
       
-      // Presume que CamadaFisicaReceptora tera o metodo estatico para transmitir o ACK
+      //Presume que CamadaFisicaReceptora tera o metodo estatico para transmitir o ACK
       CamadaFisicaReceptora.camadaFisicaTransmissora(ack, controller);
 
 
