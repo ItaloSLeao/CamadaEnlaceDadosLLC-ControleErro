@@ -302,4 +302,328 @@ public class CamadaFisicaTransmissora {
 
   } //Fim camadaFisicaTransmissoraEnquadramentoViolacao
 
+
+
+
+
+
+
+
+
+
+  /**
+   * Metodo principal da camada fisica receptora.
+   * <p>
+   * Recebe o fluxo de bits e seleciona o metodo de decodificacao apropriado
+   * com base na escolha do usuario na interface grafica.
+   *
+   * @param fluxoBits   O fluxo de bits codificado recebido do meio de comunicacao.
+   * @param controller  O controlador da interface grafica.
+   */
+  protected static void camadaFisicaReceptora(int fluxoBits[], ControllerTelaPrincipal controller) {
+    try {Thread.sleep(controller.getVelocidade());} 
+    catch (Exception e) {e.printStackTrace();} //Fim do try-catch
+
+    int[] fluxoBitsDecodificar; //Fluxo de bits, possivelmente enquadrado, a ser decodificado
+
+    if(controller.getEnquadramento() == 4){ //Se for Violacao da Cod. da Camada Fisica
+      fluxoBitsDecodificar = camadaFisicaReceptoraDesenquadramentoViolacao(fluxoBits);
+    } else {
+      fluxoBitsDecodificar = fluxoBits;
+    }
+
+    int quadro[];
+    
+    switch (controller.getCodificacao()) { //Obtem a codificacao escolhida na interface grafica
+      case 1: //Decodificacao Binaria
+        quadro = camadaFisicaReceptoraDecodificacaoBinaria(fluxoBitsDecodificar);
+        break;
+      case 2: //Decodificacao Manchester
+        quadro = camadaFisicaReceptoraDecodificacaoManchester(fluxoBitsDecodificar);
+        break;
+      default: //Decodificacao Manchester Diferencial
+        quadro = camadaFisicaReceptoraDecodificacaoManchesterDiferencial(fluxoBitsDecodificar);
+        break;
+    } //Fim switch-case
+
+    if(controller.getControleErro() == 3){ //Se o controle de erro for CRC
+      int tamanhoSemPadding = quadro.length;
+
+      if(quadro[tamanhoSemPadding-1] == 0){
+        tamanhoSemPadding--;
+      }
+
+      quadro = Arrays.copyOf(quadro, tamanhoSemPadding);
+    }
+
+    System.out.println("\nCAMADA FISICA RECEPTORA-----------------------");
+    for(int c : quadro){
+      System.out.println(Util.bitsParaString(c));
+    }
+
+    CamadaEnlaceDadosReceptora.camadaEnlaceDadosReceptora(quadro, controller);
+  } //Fim camadaFisicaReceptora
+
+
+
+  /**
+   * Realiza a decodificacao binaria do fluxo de bits.
+   * <p>
+   * Este metodo desempacota cada inteiro de 32 bits do fluxo de entrada
+   * em quatro caracteres de 8 bits (representados como inteiros).
+   *
+   * @param fluxoBits   Fluxo de bits a ser decodificado.
+   * @return int[]      Array de inteiros representando os caracteres originais.
+   */
+  protected static int[] camadaFisicaReceptoraDecodificacaoBinaria(int fluxoBits[]) {
+
+    int decodificado[] = new int[fluxoBits.length * 4];
+
+    for (int i = 0; i < fluxoBits.length; i++) {
+      int aux = fluxoBits[i];
+
+      decodificado[i*4] = (aux >> 24) & 255; //Extrai os bits de 31-24
+      decodificado[i*4 + 1] = (aux >> 16) & 255; //Extrai de 23-16
+      decodificado[i*4 + 2] = (aux >> 8) & 255; //Extrai de 15-8
+      decodificado[i*4 + 3] = aux & 255; //Extrai de 7-0
+
+    } //Fim for
+
+    return decodificado;
+    
+  } //Fim camadaFisicaReceptoraDecodificacaoBinaria
+
+
+  /**
+   * Realiza a decodificacao Manchester do fluxo de bits.
+   * <p>
+   * Reverte a codificacao Manchester, onde cada par de bits (01 ou 10) eh
+   * convertido de volta para um unico bit (0 ou 1). Cada inteiro de 32 bits
+   * do fluxo de entrada eh decodificado em dois caracteres de 8 bits.
+   *
+   * @param fluxoBits   Fluxo de bits a ser decodificado.
+   * @return int[]      Array de inteiros representando os caracteres originais.
+   */
+  protected static int[] camadaFisicaReceptoraDecodificacaoManchester(int fluxoBits[]) {
+
+    // Array temporario com tamanho maximo possivel
+    int[] decodificadoTemp = new int[fluxoBits.length * 2];
+    int bytesDecodificados = 0;
+    
+    for (int i = 0; i < fluxoBits.length; i++) {
+        int intRecebido = fluxoBits[i];
+        
+        // Se o inteiro eh completamente zero, pula (padding final)
+        if (intRecebido == 0) {
+            break;
+        }
+        
+        // Decodifica o primeiro caractere (bits 31-16)
+        int primeiroChar = 0;
+        boolean primeiraMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int par = (intRecebido >> (30 - j*2)) & 0b11;
+            primeiroChar <<= 1;
+            if(par == 0b10){
+                primeiroChar |= 1;
+            }
+            if (par != 0) {
+                primeiraMetadeValida = true;
+            }
+        }
+        
+        // Só adiciona se a primeira metade tem dados válidos
+        if (primeiraMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = primeiroChar;
+        }
+        
+        // Decodifica o segundo caractere (bits 15-0)
+        int segundoChar = 0;
+        boolean segundaMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int par = (intRecebido >> (14 - j*2)) & 0b11;
+            segundoChar <<= 1;
+            if(par == 0b10){
+                segundoChar |= 1;
+            }
+            if (par != 0) {
+                segundaMetadeValida = true;
+            }
+        }
+        
+        // Só adiciona se a segunda metade tem dados válidos
+        if (segundaMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = segundoChar;
+        }
+    }
+    
+    // Cria array final com tamanho exato
+    int[] decodificado = new int[bytesDecodificados];
+    System.arraycopy(decodificadoTemp, 0, decodificado, 0, bytesDecodificados);
+    
+    return decodificado;
+
+  } //Fim camadaFisicaReceptoraDecodificacaoManchester
+
+
+  /**
+   * Realiza a decodificacao Manchester Diferencial do fluxo de bits.
+   * <p>
+   * A decodificacao eh feita analisando a transicao de sinal no inicio de cada
+   * periodo de bit em relacao ao final do periodo anterior. Uma transicao
+   * representa um bit 0, e a ausencia de transicao representa um bit 1.
+   *
+   * @param fluxoBits   Fluxo de bits a ser decodificado.
+   * @return int[]      Array de inteiros representando os caracteres originais.
+   */
+  protected static int[] camadaFisicaReceptoraDecodificacaoManchesterDiferencial(int fluxoBits[]) {
+
+    // Array temporario com tamanho maximo possivel
+    int[] decodificadoTemp = new int[fluxoBits.length * 2];
+    int bytesDecodificados = 0;
+    boolean ultimoSinal = true;
+
+    for (int i = 0; i < fluxoBits.length; i++) {
+        int intRecebido = fluxoBits[i];
+        
+        // Se o inteiro eh completamente zero, pula (padding final)
+        if (intRecebido == 0) {
+            break;
+        }
+        
+        // Decodifica o primeiro caractere (bits 31-16)
+        int primeiroChar = 0;
+        boolean primeiraMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int primeiroSinalPar = (intRecebido >> (31 - j * 2)) & 1;
+            int segundoSinalPar = (intRecebido >> (30 - j * 2)) & 1;
+
+            primeiroChar <<= 1;
+
+            if ((primeiroSinalPar == 1) == ultimoSinal) {
+                primeiroChar |= 1;
+            }
+            ultimoSinal = (segundoSinalPar == 1);
+            
+            if (primeiroSinalPar != 0 || segundoSinalPar != 0) {
+                primeiraMetadeValida = true;
+            }
+        }
+
+        // Só adiciona se a primeira metade tem dados válidos
+        if (primeiraMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = primeiroChar;
+        }
+
+        // Decodifica o segundo caractere (bits 15-0)
+        int segundoChar = 0;
+        boolean segundaMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int primeiroSinalPar = (intRecebido >> (15 - j * 2)) & 1;
+            int segundoSinalPar = (intRecebido >> (14 - j * 2)) & 1;
+
+            segundoChar <<= 1;
+            if ((primeiroSinalPar == 1) == ultimoSinal) {
+                segundoChar |= 1;
+            }
+            ultimoSinal = (segundoSinalPar == 1);
+            
+            if (primeiroSinalPar != 0 || segundoSinalPar != 0) {
+                segundaMetadeValida = true;
+            }
+        }
+        
+        // Só adiciona se a segunda metade tem dados válidos
+        if (segundaMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = segundoChar;
+        }
+    }
+    
+    // Cria array final com tamanho exato
+    int[] decodificado = new int[bytesDecodificados];
+    System.arraycopy(decodificadoTemp, 0, decodificado, 0, bytesDecodificados);
+    
+    return decodificado;
+
+  } //Fim camadaFisicaReceptoraDecodificacaoManchesterDiferencial
+  
+
+  /**
+   * Realiza o desenquadramento dos dados com a Violacao da Codificacao da Camada Fisica.
+   * <p>
+   * Este metodo procura pela flag de violacao (dois bits '1' consecutivos),
+   * que delimita o inicio e o fim do quadro, extraindo apenas os dados contidos entre elas.
+   *
+   * @param fluxoBitsEnquadrado   Fluxo de bits enquadrado a ser desenquadrado.
+   * @return int[]                Array de bits codificados desenquadrados.
+   */
+  protected static int[] camadaFisicaReceptoraDesenquadramentoViolacao(int[] fluxoBitsEnquadrado) {
+
+    if (fluxoBitsEnquadrado == null || fluxoBitsEnquadrado.length == 0) {
+      return new int[0];
+    }
+
+    //Encontra o numero total de bits significativos no fluxo de entrada
+    int totalBits = 0;
+    int ultimoIntComDados = -1;
+    for (int i = fluxoBitsEnquadrado.length - 1; i >= 0; i--) {
+      if (fluxoBitsEnquadrado[i] != 0) {
+        ultimoIntComDados = i;
+        break;
+      }
+    } //Fim for
+
+    if (ultimoIntComDados != -1) {
+      int ultimoInt = fluxoBitsEnquadrado[ultimoIntComDados];
+      int posUltimoBit = 31 - Integer.numberOfLeadingZeros(ultimoInt);
+      totalBits = (ultimoIntComDados * 32) + posUltimoBit + 1;
+    }
+
+    //Validacao basica: precisa ter pelo menos as duas flags (4 bits)
+    if (totalBits < 4) {
+      System.err.println("Erro de desenquadramento: fluxo de bits muito curto.");
+      return new int[0];
+    }
+
+    //Calcula o tamanho do novo fluxo de bits (sem as flags)
+    int numDataBits = totalBits - 4;
+    int tamanhoArraySaida = (numDataBits + 31) / 32;
+    int[] fluxoDesenquadrado = new int[tamanhoArraySaida];
+
+    //Copia os bits de dados (pulando as flags)
+    int idxEntrada = 0;
+    int deslocamentoEntrada = 29; //Pula os 2 primeiros bits (pos 31 e 30)
+    int idxSaida = 0;
+    int deslocamentoSaida = 31;
+
+    for (int i = 0; i < numDataBits; i++) {
+      //Pega o bit da entrada
+      int bit = (fluxoBitsEnquadrado[idxEntrada] >> deslocamentoEntrada) & 1;
+
+      //Coloca o bit na saida
+      fluxoDesenquadrado[idxSaida] |= bit << deslocamentoSaida;
+
+      //Atualiza os ponteiros
+      deslocamentoEntrada--;
+      deslocamentoSaida--;
+
+      if (deslocamentoEntrada < 0) {
+        deslocamentoEntrada = 31;
+        idxEntrada++;
+      }
+      if (deslocamentoSaida < 0) {
+        deslocamentoSaida = 31;
+        idxSaida++;
+      }
+
+    } //Fim for
+
+    return fluxoDesenquadrado;
+
+  } //Fim camadaFisicaReceptoraDesenquadramentoViolacao
+
 } //Fim da classe CamadaFisicaTransmissora
