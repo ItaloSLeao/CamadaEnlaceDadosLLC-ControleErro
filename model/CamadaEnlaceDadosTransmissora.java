@@ -505,7 +505,68 @@ public class CamadaEnlaceDadosTransmissora {
    */ 
   private static int[] camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming(int[] quadro){
 
-    return quadro;
+    // Converte o quadro em uma lista de bits (MSB primeiro)
+    List<Integer> bitsOriginais = new ArrayList<>();
+    for (int byteDado : quadro) {
+        for (int i = 7; i >= 0; i--) {  // Extrai do bit 7 ao bit 0
+            bitsOriginais.add((byteDado >> i) & 1);
+        }
+    }
+    
+    int m = bitsOriginais.size(); // Numero de bits de dados
+    
+    // Calcula quantos bits de paridade sao necessarios: 2^r >= m + r + 1
+    int r = 0;
+    while ((1 << r) < (m + r + 1)) {
+        r++;
+    }
+    
+    int n = m + r; // Tamanho total com paridade
+    
+    // Cria array para os bits codificados (posicao 0 nao usada, facilita calculo)
+    int[] bitsCodificados = new int[n + 1];
+    
+    // Insere os bits de dados nas posicoes que NAO sao potencia de 2
+    int indiceDado = 0;
+    for (int i = 1; i <= n; i++) {
+        if ((i & (i - 1)) != 0) { // Nao e potencia de 2
+            if (indiceDado < bitsOriginais.size()) {
+                bitsCodificados[i] = bitsOriginais.get(indiceDado++);
+            }
+        }
+    }
+    
+    // Calcula os bits de paridade
+    for (int i = 0; i < r; i++) {
+        int posicaoParidade = 1 << i; // 1, 2, 4, 8, 16...
+        int paridade = 0;
+        
+        // Verifica todos os bits cuja representacao binaria tem o bit i ligado
+        for (int j = 1; j <= n; j++) {
+            if ((j & posicaoParidade) != 0) {
+                paridade ^= bitsCodificados[j];
+            }
+        }
+        
+        bitsCodificados[posicaoParidade] = paridade;
+    }
+    
+    // Converte de volta para bytes (8 bits por posicao, MSB primeiro)
+    int numBytes = (int) Math.ceil(n / 8.0);
+    int[] quadroComHamming = new int[numBytes];
+    
+    // Preenche os bytes
+    for (int i = 1; i <= n; i++) {  // Comeca de 1 (ignora posicao 0)
+        int indiceBit = i - 1;  // Ajusta para indice 0-based
+        int indiceByte = indiceBit / 8;
+        int posicaoNoByte = 7 - (indiceBit % 8);  // MSB primeiro
+        
+        if (bitsCodificados[i] == 1) {
+            quadroComHamming[indiceByte] |= (1 << posicaoNoByte);
+        }
+    }
+    
+    return quadroComHamming;
 
   } //Fim camadaEnlaceDadosTransmissoraControleDeErrosCodigoHamming
 

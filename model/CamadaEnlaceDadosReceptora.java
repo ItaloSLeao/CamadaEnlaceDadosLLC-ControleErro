@@ -2,6 +2,7 @@ package model;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import controller.ControllerTelaPrincipal;
@@ -574,7 +575,76 @@ public class CamadaEnlaceDadosReceptora {
    */ 
   private static int[] camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming(int[] quadro){
 
-    return quadro;
+    // Converte o quadro em lista de bits (posicao 0 nao usada)
+    List<Integer> bitsRecebidos = new ArrayList<>();
+    bitsRecebidos.add(0); // Posicao 0 nao usada
+    
+    for (int byteDado : quadro) {
+        for (int i = 7; i >= 0; i--) {  // Extrai do bit 7 ao bit 0
+            bitsRecebidos.add((byteDado >> i) & 1);
+        }
+    }
+    
+    int n = bitsRecebidos.size() - 1; // Tamanho total (sem posicao 0)
+    
+    // Calcula quantos bits de paridade existem
+    int r = 0;
+    int temp = 1;
+    while (temp <= n) {
+        r++;
+        temp = temp << 1;
+    }
+    
+    // Calcula a sindrome (detecta posicao do erro)
+    int sindrome = 0;
+    for (int i = 0; i < r; i++) {
+        int posicaoParidade = 1 << i;  // 1, 2, 4, 8, 16...
+        
+        if (posicaoParidade > n) break;  // Evita acessar posicoes invalidas
+        
+        int paridade = 0;
+        
+        for (int j = 1; j <= n; j++) {
+            if ((j & posicaoParidade) != 0) {
+                paridade ^= bitsRecebidos.get(j);
+            }
+        }
+        
+        if (paridade != 0) {
+            sindrome += posicaoParidade;
+        }
+    }
+    
+    // Se sindrome != 0, corrige o bit errado
+    if (sindrome != 0) {
+        if (sindrome <= n) {
+            System.out.println("Erro detectado na posicao: " + sindrome + " (corrigindo)");
+            bitsRecebidos.set(sindrome, bitsRecebidos.get(sindrome) ^ 1);
+        }
+    }
+    
+    // Extrai apenas os bits de dados (remove bits de paridade)
+    List<Integer> bitsDados = new ArrayList<>();
+    for (int i = 1; i <= n; i++) {
+        if ((i & (i - 1)) != 0) { // Nao e potencia de 2
+            bitsDados.add(bitsRecebidos.get(i));
+        }
+    }
+    
+    // Converte bits de volta para bytes
+    int numBytes = bitsDados.size() / 8;  // Apenas bytes completos
+    int[] quadroOriginal = new int[numBytes];
+    
+    for (int i = 0; i < numBytes * 8; i++) {
+        int indiceByte = i / 8;
+        int posicaoNoByte = 7 - (i % 8);  // MSB primeiro
+        
+        if (bitsDados.get(i) == 1) {
+            quadroOriginal[indiceByte] |= (1 << posicaoNoByte);
+        }
+    }
+    
+    return quadroOriginal;
 
   } //Fim camadaEnlaceDadosReceptoraControleDeErrosCodigoHamming
 

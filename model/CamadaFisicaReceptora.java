@@ -113,35 +113,63 @@ public class CamadaFisicaReceptora {
    */
   protected static int[] camadaFisicaReceptoraDecodificacaoManchester(int fluxoBits[]) {
 
-    int decodificado[] = new int[fluxoBits.length * 2];
+    // Array temporario com tamanho maximo possivel
+    int[] decodificadoTemp = new int[fluxoBits.length * 2];
+    int bytesDecodificados = 0;
     
-    for (int i = 0; i < fluxoBits.length; i++) { //Laco para iterar sobre 32 bits
-      int intRecebido = fluxoBits[i];
-      int primeiroChar = 0;
-      int segundoChar = 0;
-      
-
-      for (int j = 0; j < 8; j++) { //Laco para iterar sobre cada um dos 8 pares de bits
-        int par = (intRecebido >> (30 - j*2)) & 0b11;
-        primeiroChar <<= 1;
-        if(par == 0b10){
-          primeiroChar |= 1;
+    for (int i = 0; i < fluxoBits.length; i++) {
+        int intRecebido = fluxoBits[i];
+        
+        // Se o inteiro eh completamente zero, pula (padding final)
+        if (intRecebido == 0) {
+            break;
         }
-      } //Fim for
-
-      decodificado[i * 2] = primeiroChar;
-
-      for (int j = 0; j < 8; j++) { //Itera sobre 8 pares de bits do segundo caractere
-        int par = (intRecebido >> (14 - j*2)) & 0b11;
-        segundoChar <<= 1;
-        if(par == 0b10){
-          segundoChar |= 1;
+        
+        // Decodifica o primeiro caractere (bits 31-16)
+        int primeiroChar = 0;
+        boolean primeiraMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int par = (intRecebido >> (30 - j*2)) & 0b11;
+            primeiroChar <<= 1;
+            if(par == 0b10){
+                primeiroChar |= 1;
+            }
+            if (par != 0) {
+                primeiraMetadeValida = true;
+            }
         }
-      } //Fim for
-
-      decodificado[i * 2 + 1] = segundoChar; //Aloca o segundo caractere decodificado
-    } //Fim for
-
+        
+        // Só adiciona se a primeira metade tem dados válidos
+        if (primeiraMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = primeiroChar;
+        }
+        
+        // Decodifica o segundo caractere (bits 15-0)
+        int segundoChar = 0;
+        boolean segundaMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int par = (intRecebido >> (14 - j*2)) & 0b11;
+            segundoChar <<= 1;
+            if(par == 0b10){
+                segundoChar |= 1;
+            }
+            if (par != 0) {
+                segundaMetadeValida = true;
+            }
+        }
+        
+        // Só adiciona se a segunda metade tem dados válidos
+        if (segundaMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = segundoChar;
+        }
+    }
+    
+    // Cria array final com tamanho exato
+    int[] decodificado = new int[bytesDecodificados];
+    System.arraycopy(decodificadoTemp, 0, decodificado, 0, bytesDecodificados);
+    
     return decodificado;
 
   } //Fim camadaFisicaReceptoraDecodificacaoManchester
@@ -159,43 +187,73 @@ public class CamadaFisicaReceptora {
    */
   protected static int[] camadaFisicaReceptoraDecodificacaoManchesterDiferencial(int fluxoBits[]) {
 
-    int decodificado[] = new int[fluxoBits.length * 2];
+    // Array temporario com tamanho maximo possivel
+    int[] decodificadoTemp = new int[fluxoBits.length * 2];
+    int bytesDecodificados = 0;
     boolean ultimoSinal = true;
 
-    for (int i = 0; i < fluxoBits.length; i++) { //Laco que itera sobre cada grupo de 32 bits
-      int intRecebido = fluxoBits[i];
-      int primeiroChar = 0;
-      int segundoChar = 0;
-
-      //Decodifica o primeiro caractere
-      for (int j = 0; j < 8; j++) { //Loop para 8 bits
-        int primeiroSinalPar = (intRecebido >> (31 - j * 2)) & 1; //Pega o primeiro sinal do par
-        int segundoSinalPar = (intRecebido >> (30 - j * 2)) & 1; //Pega o segundo sinal do par
-
-        primeiroChar <<= 1;
-
-        if ((primeiroSinalPar == 1) == ultimoSinal) { //Sem transicao no inicio -> bit 1
-          primeiroChar |= 1;
-        } //Com transicao -> bit 0, nao precisa fazer nada
-        ultimoSinal = (segundoSinalPar == 1); //Atualiza o estado do sinal para o proximo par
-      }
-
-      decodificado[i * 2] = primeiroChar;
-
-      //Decodifica o segundo caractere
-      for (int j = 0; j < 8; j++) { //Loop para 8 bits
-        int primeiroSinalPar = (intRecebido >> (15 - j * 2)) & 1; //Pega o primeiro sinal do par
-        int segundoSinalPar = (intRecebido >> (14 - j * 2)) & 1; //Pega o segundo sinal do par
-
-        segundoChar <<= 1; //Abre espaço para o proximo bit
-        if ((primeiroSinalPar == 1) == ultimoSinal) { //Sem transicao no inicio -> bit 1
-          segundoChar |= 1;
+    for (int i = 0; i < fluxoBits.length; i++) {
+        int intRecebido = fluxoBits[i];
+        
+        // Se o inteiro eh completamente zero, pula (padding final)
+        if (intRecebido == 0) {
+            break;
         }
-        ultimoSinal = (segundoSinalPar == 1); //Atualiza o estado do sinal
-      }
-      decodificado[i * 2 + 1] = segundoChar;
-    } //Fim for
+        
+        // Decodifica o primeiro caractere (bits 31-16)
+        int primeiroChar = 0;
+        boolean primeiraMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int primeiroSinalPar = (intRecebido >> (31 - j * 2)) & 1;
+            int segundoSinalPar = (intRecebido >> (30 - j * 2)) & 1;
 
+            primeiroChar <<= 1;
+
+            if ((primeiroSinalPar == 1) == ultimoSinal) {
+                primeiroChar |= 1;
+            }
+            ultimoSinal = (segundoSinalPar == 1);
+            
+            if (primeiroSinalPar != 0 || segundoSinalPar != 0) {
+                primeiraMetadeValida = true;
+            }
+        }
+
+        // Só adiciona se a primeira metade tem dados válidos
+        if (primeiraMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = primeiroChar;
+        }
+
+        // Decodifica o segundo caractere (bits 15-0)
+        int segundoChar = 0;
+        boolean segundaMetadeValida = false;
+        
+        for (int j = 0; j < 8; j++) {
+            int primeiroSinalPar = (intRecebido >> (15 - j * 2)) & 1;
+            int segundoSinalPar = (intRecebido >> (14 - j * 2)) & 1;
+
+            segundoChar <<= 1;
+            if ((primeiroSinalPar == 1) == ultimoSinal) {
+                segundoChar |= 1;
+            }
+            ultimoSinal = (segundoSinalPar == 1);
+            
+            if (primeiroSinalPar != 0 || segundoSinalPar != 0) {
+                segundaMetadeValida = true;
+            }
+        }
+        
+        // Só adiciona se a segunda metade tem dados válidos
+        if (segundaMetadeValida) {
+            decodificadoTemp[bytesDecodificados++] = segundoChar;
+        }
+    }
+    
+    // Cria array final com tamanho exato
+    int[] decodificado = new int[bytesDecodificados];
+    System.arraycopy(decodificadoTemp, 0, decodificado, 0, bytesDecodificados);
+    
     return decodificado;
 
   } //Fim camadaFisicaReceptoraDecodificacaoManchesterDiferencial
