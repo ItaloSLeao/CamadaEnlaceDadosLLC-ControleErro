@@ -26,10 +26,8 @@ public class AplicacaoReceptora {
    * @param controller  O controlador da interface grafica para exibir o resultado.
    */
   public static void aplicacaoReceptora(String mensagem, ControllerTelaPrincipal controller){
-    System.out.println("\nAPLICACAO RECEPTORA------------------");
-    System.out.println("\nMensagem recebida: " + mensagem + "\n");
     controller.adicionarMsgRecebidaTextArea(mensagem);
-    controller.reativar();
+    //Nao reativa aqui - sera reativado quando toda a transmissao terminar
   } //Fim aplicacaoReceptora
 
 } //Fim da classe AplicacaoReceptora

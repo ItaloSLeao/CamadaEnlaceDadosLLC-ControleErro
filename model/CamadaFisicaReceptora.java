@@ -31,6 +31,12 @@ public class CamadaFisicaReceptora {
     try {Thread.sleep(controller.getVelocidade());} 
     catch (Exception e) {e.printStackTrace();} //Fim do try-catch
 
+    //Verifica se eh ACK antes de processar (ACK tem 1 inteiro de 32 bits = 0x80000000)
+    if (fluxoBits != null && fluxoBits.length == 1 && fluxoBits[0] == 0x80000000) {
+      //ACK nao precisa ser decodificado - encaminha diretamente
+      return;
+    }
+
     int[] fluxoBitsDecodificar; //Fluxo de bits, possivelmente enquadrado, a ser decodificado
 
     if(controller.getEnquadramento() == 4){ //Se for Violacao da Cod. da Camada Fisica
@@ -63,11 +69,7 @@ public class CamadaFisicaReceptora {
       quadro = Arrays.copyOf(quadro, tamanhoSemPadding);
     }
 
-    System.out.println("\nCAMADA FISICA RECEPTORA-----------------------");
-    for(int c : quadro){
-      System.out.println(Util.bitsParaString(c));
-    }
-
+    //Logs detalhados removidos para organizacao - apenas processa os dados
     CamadaEnlaceDadosReceptora.camadaEnlaceDadosReceptora(quadro, controller);
   } //Fim camadaFisicaReceptora
 
@@ -140,7 +142,7 @@ public class CamadaFisicaReceptora {
             }
         }
         
-        // Só adiciona se a primeira metade tem dados válidos
+        // So adiciona se a primeira metade tem dados validos
         if (primeiraMetadeValida) {
             decodificadoTemp[bytesDecodificados++] = primeiroChar;
         }
@@ -160,7 +162,7 @@ public class CamadaFisicaReceptora {
             }
         }
         
-        // Só adiciona se a segunda metade tem dados válidos
+        // So adiciona se a segunda metade tem dados validos
         if (segundaMetadeValida) {
             decodificadoTemp[bytesDecodificados++] = segundoChar;
         }
@@ -220,7 +222,7 @@ public class CamadaFisicaReceptora {
             }
         }
 
-        // Só adiciona se a primeira metade tem dados válidos
+        // So adiciona se a primeira metade tem dados validos
         if (primeiraMetadeValida) {
             decodificadoTemp[bytesDecodificados++] = primeiroChar;
         }
@@ -244,7 +246,7 @@ public class CamadaFisicaReceptora {
             }
         }
         
-        // Só adiciona se a segunda metade tem dados válidos
+        // So adiciona se a segunda metade tem dados validos
         if (segundaMetadeValida) {
             decodificadoTemp[bytesDecodificados++] = segundoChar;
         }
@@ -380,21 +382,33 @@ public class CamadaFisicaReceptora {
       fluxoBitsFinal = fluxoBits;
     } //Fim if-else
 
-    for(int c : fluxoBits){
-      controller.adicionarBitsCodificadosTextArea(Util.bitsParaString(c));
+    //Verifica se eh ACK: ACK tem 1 byte (0x80 ou 0x81) que vira 1 inteiro de 32 bits (0x80000000 ou 0x81000000)
+    boolean ehACK = false;
+    if (quadro != null && quadro.length == 1) {
+      int primeiroByte = quadro[0] & 0xFF;
+      if ((primeiroByte & 0x80) == 0x80) {
+        //ACK tem bit 7 setado - pode ser 0x80, 0x81, etc
+        ehACK = true;
+      }
     }
+    
+    if (!ehACK) {
+      for(int c : fluxoBits){
+        controller.adicionarBitsCodificadosTextArea(Util.bitsParaString(c));
+      }
 
-    System.out.println("\nCAMADA FISICA TRANSMISSORA ---------------------" + 
-    "\nA codificacao escolhida foi: " + codificacao + "\n");
-    for(int c : fluxoBitsFinal){
-      if(controller.getEnquadramento() == 4){
-        controller.adicionarBitsEnquadradosTextArea(Util.bitsParaString(c));
-      } //Fim if
-      
-      System.out.println(Util.bitsParaString(c));
-    } //Fim for
-
-    MeioDeComunicacao.meioDeComunicacao(fluxoBitsFinal, controller);
+      System.out.println("\nCAMADA FISICA TRANSMISSORA ---------------------" + 
+      "\nA codificacao escolhida foi: " + codificacao + "\n");
+      for(int c : fluxoBitsFinal){
+        if(controller.getEnquadramento() == 4){
+          controller.adicionarBitsEnquadradosTextArea(Util.bitsParaString(c));
+        } //Fim if
+        
+        System.out.println(Util.bitsParaString(c));
+      } //Fim for
+    }
+    
+    MeioDeComunicacao.meioDeComunicacao(fluxoBitsFinal, controller, ehACK);
   } //Fim camadaFisicaTransmissora
 
 
@@ -506,10 +520,10 @@ public class CamadaFisicaReceptora {
         int caractere = quadro[i * 2 + k];
 
         for (int j = 7; j >= 0; j--) { //Loop processa do bit 7 ao 0
-          int bit = (caractere >> j) & 1; //Isola o bit da posição 'j'
+          int bit = (caractere >> j) & 1; //Isola o bit da posicao 'j'
           int primeiroSinal, segundoSinal;
 
-          if (bit == 0) { //Bit 0: transição no inicio do periodo
+          if (bit == 0) { //Bit 0: transicao no inicio do periodo
             primeiroSinal = ultimoSinal ? 0 : 1;
             segundoSinal = ultimoSinal ? 1 : 0;
           } else { //Bit 1: sem transicao no inicio do periodo
@@ -517,7 +531,7 @@ public class CamadaFisicaReceptora {
             segundoSinal = ultimoSinal ? 0 : 1;
           }
           
-          informacao <<= 2; //Abre espaço para os proximos 2 bits
+          informacao <<= 2; //Abre espaco para os proximos 2 bits
           informacao |= (primeiroSinal << 1) | segundoSinal; //Adiciona o par de bits codificados
           ultimoSinal = (segundoSinal == 1); //Atualiza o ultimo sinal para o proximo bit
         } //Fim for

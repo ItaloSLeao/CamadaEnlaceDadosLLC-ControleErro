@@ -68,6 +68,7 @@ public class ControllerTelaPrincipal implements Initializable {
 
   private int sinalAnterior = 0;
   private int milissegundos = 307;
+  private boolean transmissaoAtiva = false; //Flag para controlar se a transmissao esta ativa
 
   /**
    * Metodo invocado para inicializar o controlador apos a interface ser
@@ -141,6 +142,7 @@ public class ControllerTelaPrincipal implements Initializable {
           comboBoxErro.setDisable(true);
           comboBoxControleErro.setDisable(true);
           limparTextArea();
+          transmissaoAtiva = true; //Ativa a flag de transmissao
           AplicacaoTransmissora.aplicacaoTransmissora(this);
         } //Fim if-else
 
@@ -171,16 +173,36 @@ public class ControllerTelaPrincipal implements Initializable {
   /**
    * Reativa os componentes da GUI apos a conclusao de uma transmissao.
    * Garante que a atualizacao ocorra na thread da aplicacao JavaFX.
+   * Este metodo deve ser chamado apenas quando TODA a transmissao foi concluida.
    */
   public void reativar() {
+    //Desativa a flag ANTES de qualquer operacao JavaFX para parar imediatamente qualquer animacao pendente
+    transmissaoAtiva = false;
+    
     Platform.runLater(() -> {
       botaoEnviar.setDisable(false);
       comboBoxCodificacao.setDisable(false);
       comboBoxEnquadramento.setDisable(false);
       comboBoxErro.setDisable(false);
       comboBoxControleErro.setDisable(false);
+      limparSinaisAnimacao(); //Limpa a animacao dos sinais ao finalizar
     }); //Fim runLater
   } //Fim reativar
+  
+  /**
+   * Limpa a animacao dos sinais, ocultando todas as imagens de sinal.
+   * Este metodo deve ser chamado quando a transmissao terminar.
+   */
+  public void limparSinaisAnimacao() {
+    Platform.runLater(() -> {
+      for (int i = 0; i < 12; i++) {
+        lowImagens[i].setVisible(false);
+        midImagens[i].setVisible(false);
+        highImagens[i].setVisible(false);
+      }
+      sinalAnterior = 0; //Reseta o sinal anterior
+    }); //Fim runLater
+  } //Fim limparSinaisAnimacao
 
   /**
    * Limpa as areas de texto da GUI para uma nova transmissao.
@@ -198,7 +220,9 @@ public class ControllerTelaPrincipal implements Initializable {
    * o estado de visibilidade da imagem a sua esquerda, com um laco regressivo.
    */
   public void atualizarSinais() {
+    if (!transmissaoAtiva) return; //Nao atualiza se transmissao nao esta ativa
     Platform.runLater(() -> {
+      if (!transmissaoAtiva) return; //Verifica novamente na thread JavaFX
       for (int i = 11; i >= 1; i--) {
         lowImagens[i].setVisible(lowImagens[i - 1].isVisible());
         midImagens[i].setVisible(midImagens[i - 1].isVisible());
@@ -216,7 +240,9 @@ public class ControllerTelaPrincipal implements Initializable {
    * @param bit O bit (0 ou 1) que esta sendo transmitido e sera desenhado.
    */
   public void sinalizar(int bit) {
+    if (!transmissaoAtiva) return; //Nao atualiza se transmissao nao esta ativa
     Platform.runLater(() -> {
+      if (!transmissaoAtiva) return; //Verifica novamente na thread JavaFX
       highImagens[0].setVisible(false);
       midImagens[0].setVisible(false);
       lowImagens[0].setVisible(false);
@@ -234,6 +260,54 @@ public class ControllerTelaPrincipal implements Initializable {
       sinalAnterior = bit;
     }); //Fim runLater
   } //Fim sinalizar
+
+  /**
+   * Desloca a animacao dos sinais para a esquerda na tela (para ACK).
+   * <p>
+   * Cria um efeito de 'onda' ao fazer com que cada imagem de sinal assuma
+   * o estado de visibilidade da imagem a sua direita, com um laco progressivo.
+   */
+  public void atualizarSinaisReverso() {
+    if (!transmissaoAtiva) return; //Nao atualiza se transmissao nao esta ativa
+    Platform.runLater(() -> {
+      if (!transmissaoAtiva) return; //Verifica novamente na thread JavaFX
+      for (int i = 0; i < 11; i++) {
+        lowImagens[i].setVisible(lowImagens[i + 1].isVisible());
+        midImagens[i].setVisible(midImagens[i + 1].isVisible());
+        highImagens[i].setVisible(highImagens[i + 1].isVisible());
+      } //Fim for
+    }); //Fim runLater
+  } //Fim atualizarSinaisReverso
+
+  /**
+   * Desenha o novo bit de sinal na ultima posicao da animacao na tela (para ACK).
+   * <p>
+   * Define a visibilidade das imagens (LOW para 0, HIGH para 1) e tambem
+   * exibe uma imagem de transicao (MID) se o novo bit for diferente do anterior.
+   *
+   * @param bit O bit (0 ou 1) que esta sendo transmitido e sera desenhado.
+   */
+  public void sinalizarReverso(int bit) {
+    if (!transmissaoAtiva) return; //Nao atualiza se transmissao nao esta ativa
+    Platform.runLater(() -> {
+      if (!transmissaoAtiva) return; //Verifica novamente na thread JavaFX
+      highImagens[11].setVisible(false);
+      midImagens[11].setVisible(false);
+      lowImagens[11].setVisible(false);
+
+      if (bit != sinalAnterior) {
+        midImagens[10].setVisible(true);
+      }
+
+      if (bit == 0) {
+        lowImagens[11].setVisible(true);
+      } else {
+        highImagens[11].setVisible(true);
+      }
+
+      sinalAnterior = bit;
+    }); //Fim runLater
+  } //Fim sinalizarReverso
 
   /**
    * Adiciona texto ao painel de exibicao de bits codificados.

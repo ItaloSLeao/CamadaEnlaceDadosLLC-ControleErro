@@ -43,17 +43,7 @@ public class CamadaAplicacaoReceptora {
       } //Fim try-catch
     } //Fim for
     
-    System.out.println("\nCAMADA DE APLICACAO RECEPTORA-----------------");
-    for (int i = 0; i < quadro.length; i++) {
-      System.out.println(quadro[i] + " = " + (char) (quadro[i]) + ";"); //Imprime a conversao no console
-      
-      try { 
-        Thread.sleep(controller.getVelocidade());
-      } catch (Exception e) {
-        e.printStackTrace();
-      } //Fim try-catch
-    } //Fim for
-
+    //Nao imprime logs detalhados aqui - apenas exibe a mensagem na interface
     AplicacaoReceptora.aplicacaoReceptora(mensagem, controller); //Chama a aplicacao receptora
   } //Fim camadaAplicacaoReceptora
   

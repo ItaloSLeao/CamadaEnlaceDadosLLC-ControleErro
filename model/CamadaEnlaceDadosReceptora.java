@@ -21,6 +21,7 @@ import util.Util;
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaEnlaceDadosReceptora {
+  private static int seqEsperado = 0; // Numero de sequencia esperado (0 ou 1)
 
   /**
    * Metodo principal da camada de enlace de dados receptora.
@@ -32,11 +33,19 @@ public class CamadaEnlaceDadosReceptora {
    * @param controller  Controlador da interface grafica.
    */
   protected static void camadaEnlaceDadosReceptora(int quadro[], ControllerTelaPrincipal controller) {
+    // Verifica primeiro se o quadro recebido eh um ACK antes de qualquer processamento
+    // ACKs vem decodificados da camada fisica como 4 bytes: [0x80, 0, 0, 0]
+    // (quando ACK original { 0x80 } eh codificado em 0x80000000 e depois decodificado)
+    if (quadro != null && quadro.length == 4) {
+      if (quadro[0] == 0x80 && quadro[1] == 0 && quadro[2] == 0 && quadro[3] == 0) {
+        // ACK nao deve ser processado aqui - ele ja foi tratado no MeioDeComunicacao
+        return; // Nao processa ACK como mensagem de dados
+      }
+    }
 
-    //Como a implementacao atual do controle de fluxo esta cuidando do envio dos quadros, do ack e da retransmissao
-    //entao ela tambem sera responsavel por centralizar as chamadas de enquadramento e de controle de erro.
+    // Como a implementacao atual do controle de fluxo esta cuidando do envio dos quadros, do ack e da retransmissao
+    // entao ela tambem sera responsavel por centralizar as chamadas de enquadramento e de controle de erro.
     camadaEnlaceDadosReceptoraControleDeFluxo(quadro, controller);
-
   } //Fim camadaEnlaceDadosReceptora
 
 
@@ -73,19 +82,10 @@ public class CamadaEnlaceDadosReceptora {
         break;
     } //Fim switch
 
-    for(int i = 0; i < quadroDesenquadrado.length; i++){
-      if(!(quadroDesenquadrado == null)){
-        System.out.println("quadroDesenquadrado[" + i + "] = " + Util.bitsParaString(quadroDesenquadrado[i]));
-      }
-      
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
-    } //Fim for
-
+    //Logs detalhados removidos para organizacao
     return quadroDesenquadrado;
 
   } //Fim de camadaEnlaceDadosReceptoraEnquadramento
-
 
 
   /**
@@ -367,16 +367,7 @@ public class CamadaEnlaceDadosReceptora {
         break;
     } //Fim switch
 
-    if(!(quadroControleErros == null)){
-      for(int i = 0; i < quadroControleErros.length; i++){
-      System.out.println("quadroControleErros[" + i + "] = " + Util.bitsParaString(quadroControleErros[i]));
-      
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
-      } //Fim for      
-    }
-
-    System.out.println("\n");
+    //Logs detalhados removidos para organizacao
     
     return quadroControleErros;
 
@@ -608,13 +599,33 @@ public class CamadaEnlaceDadosReceptora {
   private static void camadaEnlaceDadosReceptoraControleDeFluxo(int quadro[], ControllerTelaPrincipal controller){
 
     try{
+      //Extrai numero de sequencia do quadro (primeiro byte)
+      int seqQuadro = -1;
+      int[] quadroSemSeq = quadro;
+      
+      if (quadro != null && quadro.length > 0) {
+        seqQuadro = quadro[0] & 0x01; // Extrai o bit menos significativo como seq
+        // Remove o numero de sequencia do quadro (primeiro byte)
+        quadroSemSeq = new int[quadro.length - 1];
+        System.arraycopy(quadro, 1, quadroSemSeq, 0, quadro.length - 1);
+      }
 
-      System.out.println("\nCAMADA DE ENLACE DE DADOS RECEPTORA ------------------\n");
+      //Verifica se eh um quadro duplicado
+      if (seqQuadro != seqEsperado) {
+        System.out.println("> Quadro duplicado recebido (Seq=" + seqQuadro + ", esperava " + seqEsperado + ") - reenvia ACK e ignora");
+        //Reenvia ACK com o seq do quadro recebido (confirmando o quadro duplicado)
+        int[] ack = { 0x80 | seqQuadro }; //ACK com o seq do quadro recebido
+        CamadaFisicaReceptora.camadaFisicaTransmissora(ack, controller);
+        return; //Ignora o quadro duplicado
+      }
 
-      int[] quadroControleErros = camadaEnlaceDadosReceptoraControleDeErros(quadro, controller);
+      int[] quadroControleErros = camadaEnlaceDadosReceptoraControleDeErros(quadroSemSeq, controller);
 
       if (quadroControleErros == null) {
         //Erro detectado
+        System.err.println("\n>>> ERRO DETECTADO: Aguardando retransmissao...");
+        controller.beep();
+        
         Platform.runLater(() -> {
           Alert alert = new Alert(AlertType.ERROR);
 
@@ -625,14 +636,25 @@ public class CamadaEnlaceDadosReceptora {
           alert.setTitle("ERRO DETECTADO");
           alert.setHeaderText(null);
           alert.setContentText("A Camada de Enlace de Dados Receptora detectou um erro de transmissao! Aguardando retransmissao");
-          alert.showAndWait();
-
-          //Nao reativa a GUI, pois esta esperando retransmissao
-          //controller.reativar(); 
+          
+          //Mostra o alert e fecha automaticamente apos 5 segundos
+          alert.show();
+          javafx.concurrent.Task<Void> closeTask = new javafx.concurrent.Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+              Thread.sleep(5000);
+              Platform.runLater(() -> {
+                if (alert.isShowing()) {
+                  alert.close();
+                }
+              });
+              return null;
+            }
+          };
+          Thread closeThread = new Thread(closeTask);
+          closeThread.setDaemon(true);
+          closeThread.start();
         });
-
-        System.err.println("A Camada de Enlace de Dados Receptora detectou um erro de transmissao! Mensagem descartada. Aguardando retransmissao.");
-        controller.beep();
 
         return; //Quebra a transmissao (nao envia ACK)
       }
@@ -640,15 +662,18 @@ public class CamadaEnlaceDadosReceptora {
       //Se o quadro esta OK, processa e envia ACK
       int[] quadroDesenquadrado = camadaEnlaceDadosReceptoraEnquadramento(quadroControleErros, controller);
 
-      System.out.println("\n");
-
       CamadaAplicacaoReceptora.camadaAplicacaoReceptora(quadroDesenquadrado, controller);
 
-      //Envia o ACK de sucesso fazendo chamada estatica
-      System.out.println("CAMADA ENLACE (RX): Mensagem recebida com sucesso. Enviando ACK...");
-      int[] ack = { 1 << 31 }; //Quadro de ACK (ex: bit 31 = 1)
+      //Envia ACK com o numero de sequencia recebido, depois atualiza seqEsperado
+      int seqRecebido = seqQuadro;
+      System.out.println("> ACK enviado (Seq=" + seqRecebido + ")");
+      //ACK eh criado como byte 0x80 | seq (bit 7 setado + seq no bit 0)
+      int[] ack = { 0x80 | seqRecebido }; //ACK com numero de sequencia recebido
       
-      //Presume que CamadaFisicaReceptora tera o metodo estatico para transmitir o ACK
+      //Atualiza numero de sequencia esperado para o proximo quadro
+      seqEsperado = (seqEsperado + 1) % 2; // Alterna entre 0 e 1
+      
+      //Envia o ACK atraves da camada fisica, que passara pelo meio de comunicacao para animacao
       CamadaFisicaReceptora.camadaFisicaTransmissora(ack, controller);
 
 

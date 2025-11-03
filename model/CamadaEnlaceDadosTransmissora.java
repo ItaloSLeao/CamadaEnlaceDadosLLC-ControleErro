@@ -22,6 +22,7 @@ import util.Util;
 public class CamadaEnlaceDadosTransmissora {
   private static Semaphore mutex = new Semaphore(1);
   private static Temporizador temporizador;
+  private static int seqEsperado = 0; // Numero de sequencia esperado no ACK (0 ou 1)
 
   /**
    * Realiza as funcionalidades da camada de enlace de dados transmissora.
@@ -34,20 +35,13 @@ public class CamadaEnlaceDadosTransmissora {
    * @param controller Controlador da interface grafica para interacoes com a UI.
    */
   protected static void camadaEnlaceDadosTransmissora(int quadro[], ControllerTelaPrincipal controller) {
-
     System.out.println("\nCAMADA DE ENLACE DE DADOS TRANSMISSORA--------------\n");
 
     int[] quadroEnquadrado = camadaEnlaceDadosTransmissoraEnquadramento(quadro, controller);
 
-    int[] quadroControleErro = camadaEnlaceDadosTransmissoraControleDeErros(quadroEnquadrado, controller);
-
-    camadaEnlaceDadosTransmissoraControleDeFluxo(quadroControleErro, controller);
-
-    //CamadaFisicaTransmissora.camadaFisicaTransmissora(quadroControleErro, controller);
-
+    // Divide em quadros primeiro, depois aplica controle de erro em cada quadro
+    camadaEnlaceDadosTransmissoraControleDeFluxo(quadroEnquadrado, controller);
   } //Fim camadaEnlaceDadosTransmissora
-
-
 
 
   /**
@@ -86,22 +80,21 @@ public class CamadaEnlaceDadosTransmissora {
 
     System.out.println("\nO enquadramento escolhido foi: " + enquadramento + "\n");
 
-    for(int i = 0; i < quadroEnquadrado.length; i++){
-
-      if(!(tipoEnquadramento == 4)){
+    for (int i = 0; i < quadroEnquadrado.length; i++) {
+      if (!(tipoEnquadramento == 4)) {
         controller.adicionarBitsEnquadradosTextArea(Util.bitsParaString(quadroEnquadrado[i]) + "\n");
         System.out.println("quadroEnquadrado[" + i + "] = " + Util.bitsParaString(quadroEnquadrado[i]));
       }
       
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
-
+      try {
+        Thread.sleep(controller.getVelocidade());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     } //Fim for
 
     return quadroEnquadrado;
-
   } //Fim camadaEnlaceDadosTransmissoraEnquadramento
-
 
 
   /**
@@ -320,8 +313,6 @@ public class CamadaEnlaceDadosTransmissora {
   } //Fim camadaEnlaceDadosTransmissoraEnquadramentoViolacaoCamadaFisica
 
 
-  
-
   /**
    * Realiza o controle de erros com os quadros de caracteres enquadrados recebidos,
    * conforme a escolha na GUI.
@@ -358,18 +349,19 @@ public class CamadaEnlaceDadosTransmissora {
 
     System.out.println("\nO controle de erro escolhido foi: " + controleErros + "\n");
 
-    for(int i = 0; i < quadroControleErros.length; i++){
+    for (int i = 0; i < quadroControleErros.length; i++) {
       controller.adicionarBitsEnquadradosTextArea(Util.bitsParaString(quadroControleErros[i]) + "\n");
       System.out.println("quadroControleErros[" + i + "] = " + Util.bitsParaString(quadroControleErros[i]));
       
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
+      try {
+        Thread.sleep(controller.getVelocidade());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     } //Fim for
 
     return quadroControleErros;
-
   } //Fim camadaEnlaceDadosTransmissoraControleDeErros
-
 
 
   /**
@@ -579,9 +571,199 @@ public class CamadaEnlaceDadosTransmissora {
 
 
   
+  /**
+   * Divide a mensagem enquadrada em quadros individuais baseado no tipo de enquadramento.
+   * 
+   * @param quadroEnquadrado Mensagem ja enquadrada e com controle de erros.
+   * @param controller Controlador da interface grafica.
+   * @return Lista de quadros individuais para transmissao.
+   */
+  private static ArrayList<int[]> dividirEmQuadros(int[] quadroEnquadrado, ControllerTelaPrincipal controller) {
+    ArrayList<int[]> quadros = new ArrayList<>();
+    int tipoEnquadramento = controller.getEnquadramento();
+    
+    switch (tipoEnquadramento) {
+      case 1: // Contagem de Caracteres
+        quadros = dividirQuadrosContagemCaracteres(quadroEnquadrado, controller);
+        break;
+      case 2: // Insercao de Bytes
+        quadros = dividirQuadrosInsercaoBytes(quadroEnquadrado);
+        break;
+      case 3: // Insercao de Bits
+        quadros = dividirQuadrosInsercaoBits(quadroEnquadrado);
+        break;
+      default: // Violacao da Camada Fisica
+        // Para violacao, trata tudo como um unico quadro
+        quadros.add(quadroEnquadrado);
+        break;
+    }
+    
+    return quadros;
+  }
+  
+  /**
+   * Divide quadros usando contagem de caracteres.
+   * Cada quadro comeca com um byte de contagem que indica o tamanho do quadro.
+   */
+  private static ArrayList<int[]> dividirQuadrosContagemCaracteres(int[] quadroEnquadrado, ControllerTelaPrincipal controller) {
+    ArrayList<int[]> quadros = new ArrayList<>();
+    int indice = 0;
+    
+    while (indice < quadroEnquadrado.length) {
+      if (quadroEnquadrado[indice] == 0) {
+        break; // Fim logico
+      }
+      
+      // Le o byte de contagem do quadro
+      int tamanhoQuadro = quadroEnquadrado[indice];
+      
+      // Copia o quadro completo (incluindo byte de contagem e dados)
+      int[] quadro = new int[tamanhoQuadro];
+      int tamanhoReal = Math.min(tamanhoQuadro, quadroEnquadrado.length - indice);
+      
+      for (int i = 0; i < tamanhoReal && indice < quadroEnquadrado.length; i++) {
+        quadro[i] = quadroEnquadrado[indice++];
+      }
+      
+      // Se o quadro nao foi completamente copiado, completa com zeros
+      if (tamanhoReal < tamanhoQuadro) {
+        int[] quadroCompleto = new int[tamanhoQuadro];
+        System.arraycopy(quadro, 0, quadroCompleto, 0, tamanhoReal);
+        quadro = quadroCompleto;
+      }
+      
+      quadros.add(quadro);
+    }
+    
+    return quadros;
+  }
+  
+  /**
+   * Divide quadros usando insercao de bytes.
+   * Cada quadro e delimitado por flags e deve incluir as FLAGs de inicio e fim.
+   */
+  private static ArrayList<int[]> dividirQuadrosInsercaoBytes(int[] quadroEnquadrado) {
+    ArrayList<int[]> quadros = new ArrayList<>();
+    ArrayList<Integer> quadroAtual = new ArrayList<>();
+    final int FLAG = 'i';
+    boolean dentroQuadro = false;
+    
+    for (int i = 0; i < quadroEnquadrado.length; i++) {
+      int caractere = quadroEnquadrado[i];
+      
+      if (caractere == FLAG) {
+        if (dentroQuadro) {
+          // Fim do quadro - adiciona a FLAG final e fecha o quadro
+          quadroAtual.add(FLAG);
+          if (!quadroAtual.isEmpty()) {
+            int[] quadro = new int[quadroAtual.size()];
+            for (int j = 0; j < quadroAtual.size(); j++) {
+              quadro[j] = quadroAtual.get(j);
+            }
+            quadros.add(quadro);
+            quadroAtual.clear();
+          }
+          dentroQuadro = false;
+        } else {
+          // Inicio do quadro - adiciona a FLAG inicial
+          quadroAtual.add(FLAG);
+          dentroQuadro = true;
+        }
+      } else if (dentroQuadro) {
+        quadroAtual.add(caractere);
+      }
+    }
+    
+    // Se ainda ha dados no quadro atual (sem FLAG final), adiciona FLAG final e fecha
+    if (!quadroAtual.isEmpty()) {
+      // Se nao tem FLAG final, adiciona
+      if (quadroAtual.get(quadroAtual.size() - 1) != FLAG) {
+        quadroAtual.add(FLAG);
+      }
+      int[] quadro = new int[quadroAtual.size()];
+      for (int j = 0; j < quadroAtual.size(); j++) {
+        quadro[j] = quadroAtual.get(j);
+      }
+      quadros.add(quadro);
+    }
+    
+    return quadros;
+  }
+  
+  /**
+   * Divide quadros usando insercao de bits.
+   * Cada quadro e delimitado por flags e deve incluir as FLAGs de inicio e fim.
+   */
+  private static ArrayList<int[]> dividirQuadrosInsercaoBits(int[] quadroEnquadrado) {
+    ArrayList<int[]> quadros = new ArrayList<>();
+    ArrayList<Integer> quadroAtual = new ArrayList<>();
+    final int FLAG = 0b01111110;
+    boolean dentroQuadro = false;
+    
+    for (int i = 0; i < quadroEnquadrado.length; i++) {
+      int byteAtual = quadroEnquadrado[i];
+      
+      if (byteAtual == FLAG) {
+        if (dentroQuadro) {
+          // Fim do quadro - adiciona a FLAG final e fecha o quadro
+          quadroAtual.add(FLAG);
+          if (!quadroAtual.isEmpty()) {
+            int[] quadro = new int[quadroAtual.size()];
+            for (int j = 0; j < quadroAtual.size(); j++) {
+              quadro[j] = quadroAtual.get(j);
+            }
+            quadros.add(quadro);
+            quadroAtual.clear();
+          }
+          dentroQuadro = false;
+        } else {
+          // Inicio do quadro - adiciona a FLAG inicial
+          quadroAtual.add(FLAG);
+          dentroQuadro = true;
+        }
+      } else if (dentroQuadro) {
+        quadroAtual.add(byteAtual);
+      }
+    }
+    
+    // Se ainda ha dados no quadro atual (sem FLAG final), adiciona FLAG final e fecha
+    if (!quadroAtual.isEmpty()) {
+      // Se nao tem FLAG final, adiciona
+      if (quadroAtual.get(quadroAtual.size() - 1) != FLAG) {
+        quadroAtual.add(FLAG);
+      }
+      int[] quadro = new int[quadroAtual.size()];
+      for (int j = 0; j < quadroAtual.size(); j++) {
+        quadro[j] = quadroAtual.get(j);
+      }
+      quadros.add(quadro);
+    }
+    
+    return quadros;
+  }
+  
   private static void camadaEnlaceDadosTransmissoraControleDeFluxo(int quadro[], ControllerTelaPrincipal controller) {
-    System.out.println("Iniciando Controle de Fluxo Stop-and-Wait");
-    temporizador = new Temporizador(quadro, controller);
+    System.out.println("\n=== CONTROLE DE FLUXO STOP-AND-WAIT ===");
+    
+    // Divide a mensagem enquadrada em quadros individuais
+    ArrayList<int[]> quadrosEnquadrados = dividirEmQuadros(quadro, controller);
+    
+    System.out.println("> Mensagem dividida em " + quadrosEnquadrados.size() + " quadro(s)");
+    
+    // Aplica controle de erro em cada quadro individualmente e adiciona numero de sequencia
+    ArrayList<int[]> quadrosComControleErro = new ArrayList<>();
+    int seqAtual = 0; // Numero de sequencia do primeiro quadro
+    for (int i = 0; i < quadrosEnquadrados.size(); i++) {
+      int[] quadroComErro = camadaEnlaceDadosTransmissoraControleDeErros(quadrosEnquadrados.get(i), controller);
+      // Adiciona numero de sequencia ao inicio do quadro
+      int[] quadroComSeq = new int[quadroComErro.length + 1];
+      quadroComSeq[0] = seqAtual; // Primeiro byte eh o numero de sequencia
+      System.arraycopy(quadroComErro, 0, quadroComSeq, 1, quadroComErro.length);
+      quadrosComControleErro.add(quadroComSeq);
+      seqAtual = (seqAtual + 1) % 2; // Alterna entre 0 e 1
+    }
+    
+    temporizador = new Temporizador(quadrosComControleErro, controller);
     temporizador.start();
   } //Fim camadaEnlaceDadosTransmissoraControleDeFluxo
 
@@ -589,20 +771,26 @@ public class CamadaEnlaceDadosTransmissora {
 
 
   static class Temporizador extends Thread {
-    private int[] quadro; //A mensagem inteira
-    private boolean liberado; //Flag para parar o timer
+    private ArrayList<int[]> quadros; //Lista de quadros individuais
+    private int indiceQuadroAtual; //Indice do quadro sendo transmitido
+    private volatile boolean quadroLiberado; //Flag para parar o timer do quadro atual (volatile para visibilidade entre threads)
     private ControllerTelaPrincipal controller;
+    private int[] quadroAtual; //Quadro sendo transmitido atualmente
 
-    public Temporizador(int[] quadro, ControllerTelaPrincipal controller) {
-      this.quadro = quadro;
-      this.liberado = false;
+    public Temporizador(ArrayList<int[]> quadros, ControllerTelaPrincipal controller) {
+      this.quadros = quadros;
+      this.indiceQuadroAtual = 0;
+      this.quadroLiberado = false;
       this.controller = controller;
     }
 
-    //Para o temporizador
-    public void liberar() {
-      this.liberado = true;
-      interrupt(); //Interrompe o sleep
+    //Para o temporizador do quadro atual e avanca para o proximo
+    public synchronized void liberar() {
+      System.out.println("> TEMPORIZADOR.liberar() chamado - quadroLiberado=" + this.quadroLiberado + ", indiceQuadroAtual=" + this.indiceQuadroAtual);
+      this.quadroLiberado = true;
+      this.interrupt(); //Interrompe o sleep
+      notifyAll(); //Notifica threads esperando
+      System.out.println("> TEMPORIZADOR.liberar() concluido - quadroLiberado agora=" + this.quadroLiberado);
     }
 
     @Override
@@ -610,52 +798,180 @@ public class CamadaEnlaceDadosTransmissora {
       try {
         mutex.acquire(); //Trava o semaforo
         
-        System.out.println("Enviando mensagem... (Tentativa 1)");
-        CamadaFisicaTransmissora.camadaFisicaTransmissora(quadro, controller);
-        
-        int tentativas = 2;
-        while (!liberado) {
-          Thread.sleep(5000); //Tempo de Timeout (5 segundos)
+        // Envia cada quadro sequencialmente
+        for (int i = 0; i < quadros.size(); i++) {
+          indiceQuadroAtual = i;
+          quadroAtual = quadros.get(i);
+          quadroLiberado = false;
+          
+          // Extrai numero de sequencia do quadro
+          int seqQuadro = quadroAtual[0];
+          System.out.println("> Enviando quadro " + (i + 1) + "/" + quadros.size() + 
+                            " (Seq=" + seqQuadro + ", Tentativa 1)");
+          CamadaFisicaTransmissora.camadaFisicaTransmissora(quadroAtual, controller);
+          
+          int tentativas = 2;
+          while (!quadroLiberado) {
+            try {
+              Thread.sleep(5000); // Tempo de Timeout (5 segundos)
+            } catch (InterruptedException e) {
+              // ACK recebido durante o sleep - verifica se foi liberado
+              System.out.println("> InterruptedException capturada - quadroLiberado=" + quadroLiberado);
+              if (quadroLiberado) {
+                System.out.println("> Saindo do loop while - quadro foi liberado");
+                break; // Sai do loop se foi liberado
+              }
+              // Se nao foi liberado, pode ser interrupcao de outro motivo - continua
+              System.out.println("> InterruptedException mas quadro nao liberado - continuando espera");
+              continue;
+            }
 
-          if (!liberado) {
-            System.err.println("TIMEOUT! Retransmitindo mensagem... (Tentativa " + (tentativas++) + ")");
-            CamadaFisicaTransmissora.camadaFisicaTransmissora(quadro, controller);
+            // Verifica novamente apos o sleep (race condition)
+            if (quadroLiberado) {
+              System.out.println("> Quadro liberado apos sleep - saindo do loop");
+              break;
+            }
+
+            // Timeout ocorreu - retransmite
+            System.err.println("> TIMEOUT! Retransmitindo quadro " + (i + 1) + 
+                              " (Seq=" + seqQuadro + ", Tentativa " + (tentativas++) + ")");
+            CamadaFisicaTransmissora.camadaFisicaTransmissora(quadroAtual, controller);
           }
+          
+          // Log adicional para debug
+          System.out.println("> SAIU DO LOOP WHILE - quadroLiberado=" + quadroLiberado + 
+                            ", indice=" + i + ", total=" + quadros.size());
+          
+          // Verifica se saiu do loop porque foi liberado ou porque ocorreu erro
+          if (!quadroLiberado) {
+            // Se nao foi liberado, pode ter ocorrido um erro - interrompe transmissao
+            System.err.println("> ERRO: Quadro " + (i + 1) + " nao foi confirmado");
+            break;
+          }
+          
+          System.out.println("> Quadro " + (i + 1) + " confirmado (ACK recebido para Seq=" + seqQuadro + ")");
         }
-        System.out.println("Mensagem confirmada (ACK recebido).");
+        
+        // Loop for terminou - todos os quadros foram enviados
+        // Nao importa se todos foram confirmados, a transmissao deve parar aqui
+        System.out.println("\n>>> TRANSMISSAO CONCLUIDA: Todos os quadros foram transmitidos!");
+        
+        // IMPORTANTE: Limpa referencia ao temporizador ANTES de qualquer outra operacao
+        // Isso impede que ACKs recebidos depois tentem processar em um temporizador ja finalizado
+        Temporizador temp = temporizador;
+        temporizador = null;
+        
+        // Interrompe a thread do temporizador para garantir que nao continue
+        if (temp != null) {
+          System.out.println("> Finalizando temporizador - thread ativa: " + temp.isAlive());
+          temp.interrupt(); // Interrompe qualquer sleep ou operacao pendente
+        }
+        
+        mutex.release(); // Libera o semaforo
+        Platform.runLater(() -> controller.reativar()); // Reativa a GUI
 
       } catch (InterruptedException e) {
-        //Ocorreu quando .liberar() eh chamado. Sucesso.
-        if(!liberado) {
-          System.err.println("Temporizador interrompido inesperadamente.");
-          mutex.release(); //Libera em caso de erro
-          Platform.runLater(() -> controller.reativar());
-        }
+        // InterruptedException ocorreu - pode ser:
+        // 1. .liberar() chamado (ACK recebido) - quadroLiberado deve ser true
+        // 2. Thread interrompida externamente (finalizacao)
+        
+        System.out.println("> InterruptedException no temporizador - indiceQuadroAtual=" + indiceQuadroAtual + 
+                          ", quadroLiberado=" + quadroLiberado + ", quadros.size()=" + quadros.size());
+        
+        // Finaliza independente do estado - limpa referencia e reativa GUI
+        System.out.println("\n>>> TRANSMISSAO FINALIZADA (InterruptedException)");
+        Temporizador temp = temporizador;
+        temporizador = null; // Limpa referencia imediatamente
+        mutex.release();
+        Platform.runLater(() -> controller.reativar());
       }
     } //Fim run
   } //Fim classe Temporizador
 
 
-
-
   protected static void ACKtemporizador(int[] ack, ControllerTelaPrincipal controller) {
-    System.out.println("CAMADA ENLACE (TX): ACK Recebido!");
-
-    //Logica simples de verificacao de ACK
-    if (ack != null && ack.length > 0 && ack[0] == (1 << 31)) {
-      if (temporizador != null) {
-        temporizador.liberar(); //Para o temporizador atual
-        System.out.println("Transmissao concluida com sucesso!");
-        mutex.release(); // Libera o semaforo
-        Platform.runLater(() -> controller.reativar()); //Reativa a GUI
+    // Logica de verificacao de ACK
+    // ACK pode vir como inteiro de 32 bits (0x80000000) ou como array de bytes decodificado
+    boolean ackValido = false;
+    int seqAck = -1;
+    
+    if (ack != null && ack.length > 0) {
+      // Verifica se eh ACK decodificado pela camada fisica (com numero de sequencia)
+      // ACK binaria: [0x80|seq, 0x00, 0x00, 0x00] ou [0x81|seq, 0x00, 0x00, 0x00] (4 bytes)
+      // ACK Manchester: [0x80|seq] ou [0x81|seq] (1 byte)
+      
+      int primeiroByte = ack[0] & 0xFF;
+      
+      // Verifica se o primeiro byte tem bit 7 setado (0x80) - marca de ACK
+      if ((primeiroByte & 0x80) == 0x80) {
+        // Pode ser ACK - verifica se eh valido
+        if (ack.length == 1) {
+          // ACK Manchester ou formato compacto
+          seqAck = primeiroByte & 0x01;
+          ackValido = true;
+        } else if (ack.length >= 4) {
+          // ACK binaria - verifica se os outros bytes sao zeros (padding)
+          // ACK binaria deve ter [0x80|seq, 0, 0, 0]
+          boolean todosZeros = true;
+          for (int i = 1; i < 4 && i < ack.length; i++) {
+            if ((ack[i] & 0xFF) != 0) {
+              todosZeros = false;
+              break;
+            }
+          }
+          if (todosZeros) {
+            seqAck = primeiroByte & 0x01;
+            ackValido = true;
+          }
+        } else if (ack.length >= 2) {
+          // Formato intermediario - primeiro byte deve ser ACK, resto pode ser padding
+          seqAck = primeiroByte & 0x01;
+          ackValido = true;
+        }
+      }
+      
+      // Compatibilidade com formato antigo (sem seq) - apenas se nao reconheceu acima
+      if (!ackValido) {
+        if (ack.length == 1 && (ack[0] == 0x80000000 || ack[0] == 0x80 || ack[0] == (1 << 31))) {
+          seqAck = 0;
+          ackValido = true;
+        } else if (ack.length >= 4 && ack[0] == 0x80 && ack[1] == 0 && ack[2] == 0 && ack[3] == 0) {
+          seqAck = 0;
+          ackValido = true;
+        }
+      }
+    }
+    
+    // Verifica se o ACK corresponde ao numero de sequencia esperado
+    System.out.println("> ACKtemporizador chamado - ackValido=" + ackValido + ", seqAck=" + seqAck + 
+                       ", seqEsperado=" + seqEsperado + ", temporizador=" + (temporizador != null ? "existe" : "null"));
+    
+    if (ackValido && temporizador != null) {
+      if (!temporizador.isAlive()) {
+        System.out.println("> ACK valido mas temporizador nao esta ativo - transmissao ja terminou");
+      } else if (seqAck == seqEsperado) {
+        System.out.println("> ACK recebido e confirmado (Seq=" + seqAck + ", esperava " + seqEsperado + 
+                          ") - chamando liberar()");
+        temporizador.liberar(); // Para o temporizador atual
+        seqEsperado = (seqEsperado + 1) % 2; // Alterna entre 0 e 1
+        System.out.println("> ACK processado - novo seqEsperado=" + seqEsperado);
+      } else {
+        System.out.println("> ACK recebido com Seq incorreto (" + seqAck + " esperava " + seqEsperado + ") - ignorado");
+      }
+    } else if (ack != null && ack.length > 0) {
+      // Debug: mostra o que foi recebido se nao foi reconhecido como ACK
+      if (temporizador == null) {
+        System.out.println("> ACK recebido mas temporizador eh null - transmissao ja terminou?");
+      } else if (!temporizador.isAlive()) {
+        System.out.println("> ACK recebido mas temporizador nao esta ativo - transmissao ja terminou");
+      } else if (!ackValido) {
+        System.out.println("> ACK nao reconhecido - primeiro byte: 0x" + Integer.toHexString(ack[0] & 0xFF) + 
+                           ", length: " + ack.length);
       }
     } else {
-      //Deixa o temporizador esgotar
+      System.out.println("> ACKtemporizador: ack eh null ou vazio");
     }
   }
-
-
-
 
 
 

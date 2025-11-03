@@ -28,8 +28,9 @@ public class MeioDeComunicacao {
    *
    * @param fluxoBits   O fluxo de bits a ser transmitido, vindo da camada fisica transmissora.
    * @param controller  O controlador da interface grafica para atualizacoes visuais.
+   * @param ehACK       Indica se a transmissao eh um ACK (para animacao reversa).
    */
-  protected static void meioDeComunicacao(int fluxoBits[], ControllerTelaPrincipal controller) {
+  protected static void meioDeComunicacao(int fluxoBits[], ControllerTelaPrincipal controller, boolean ehACK) {
 
     int fluxoBitsPontoA[] = fluxoBits; //Ponto A
     int fluxoBitsPontoB[] = new int[fluxoBits.length]; //Ponto B
@@ -44,13 +45,12 @@ public class MeioDeComunicacao {
 
     boolean erro = erroRandom < probErro;
 
-    System.out.println("\nMEIO DE COMUNICACAO----------------------\n" 
-        + "Probabilidade de erro: " + probErro + "%\n");
-    
+    if (!ehACK) {
+      System.out.println("\nMEIO DE COMUNICACAO----------------------\n" 
+          + "Probabilidade de erro: " + probErro + "%\n");
+    }
 
     for (int i = 0; i < fluxoBits.length; i++) { //Laco para processar cada inteiro de 32 bits
-
-      System.out.println("Bits enviados: " + Util.bitsParaString(fluxoBitsPontoA[i]));
 
       int bits = fluxoBitsPontoA[i];
       int bitComparacao = 1;
@@ -58,11 +58,9 @@ public class MeioDeComunicacao {
 
       for (int x = 0; x < 32; x++) { //Laco para processar cada bit
 
-        System.out.println("Inteiro: " + Integer.toString(i + 1) + " Bit: " + Integer.toString(x + 1) 
-            + " == " + Integer.toString((bits & bitComparacao) != 0 ? 1 : 0));
-
         bitParaEnviar |= (bits & bitComparacao);
         
+        //Usa animacao normal para ACK (mesma direcao dos quadros normais)
         controller.atualizarSinais(); //Atualiza a visualizacao dos sinais na GUI
         controller.sinalizar((bits & bitComparacao) != 0 ? 1 : 0); //Define o sinal atual a ser exibido
 
@@ -78,8 +76,10 @@ public class MeioDeComunicacao {
         catch (Exception e) {e.printStackTrace();} //Fim de try-catch
 
       } //Fim for bits
+
+      controller.atualizarSinais();
       
-      if(erro){ //Se acertou o intervalo [0,probErro]
+      if(erro && !ehACK){ //ACKs nao sofrem erros
 
         if(i == indiceFluxoErro){
           int bitErro = random.nextInt(32); //Posicao do bit que tera erro
@@ -89,11 +89,41 @@ public class MeioDeComunicacao {
       } //Fim if
 
       fluxoBitsPontoB[i] = bitParaEnviar;
-      System.out.println("Bits recebidos: " + Util.bitsParaString(fluxoBitsPontoB[i]) + "\n");
 
     } //Fim for fluxoBits[]
     
-    CamadaFisicaReceptora.camadaFisicaReceptora(fluxoBitsPontoB, controller);
+    if (ehACK) {
+      //ACK precisa ser decodificado antes de chegar ao transmissor
+      //Passa pela camada fisica para decodificacao (Manchester, etc)
+      System.out.println("> MeioDeComunicacao: ACK recebido, iniciando decodificacao (codificacao=" + controller.getCodificacao() + ")");
+      int[] ackDecodificado = null;
+      
+      //Decodifica o ACK de acordo com a codificacao escolhida
+      //Como eh um ACK, nao precisa passar por desenquadramento, apenas decodificacao
+      switch (controller.getCodificacao()) {
+        case 1: //Binaria
+          ackDecodificado = CamadaFisicaReceptora.camadaFisicaReceptoraDecodificacaoBinaria(fluxoBitsPontoB);
+          System.out.println("> MeioDeComunicacao: ACK decodificado (binaria) - length=" + (ackDecodificado != null ? ackDecodificado.length : 0));
+          if (ackDecodificado != null && ackDecodificado.length > 0) {
+            System.out.println("> MeioDeComunicacao: Primeiro byte do ACK decodificado: 0x" + Integer.toHexString(ackDecodificado[0] & 0xFF));
+          }
+          break;
+        case 2: //Manchester
+          ackDecodificado = CamadaFisicaReceptora.camadaFisicaReceptoraDecodificacaoManchester(fluxoBitsPontoB);
+          System.out.println("> MeioDeComunicacao: ACK decodificado (Manchester) - length=" + (ackDecodificado != null ? ackDecodificado.length : 0));
+          break;
+        default: //Manchester Diferencial
+          ackDecodificado = CamadaFisicaReceptora.camadaFisicaReceptoraDecodificacaoManchesterDiferencial(fluxoBitsPontoB);
+          System.out.println("> MeioDeComunicacao: ACK decodificado (Manchester Diferencial) - length=" + (ackDecodificado != null ? ackDecodificado.length : 0));
+          break;
+      }
+      
+      //ACK vai para o transmissor (ja decodificado)
+      System.out.println("> MeioDeComunicacao: Enviando ACK decodificado para ACKtemporizador");
+      CamadaEnlaceDadosTransmissora.ACKtemporizador(ackDecodificado, controller);
+    } else {
+      CamadaFisicaReceptora.camadaFisicaReceptora(fluxoBitsPontoB, controller);
+    }
 
   } //Fim meioDeComunicacao
   
