@@ -12,7 +12,7 @@ import java.util.Random;
  * de ocorrencia de um erro de transmissao, mediante a probabilidade escolhida.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 16/10/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class MeioDeComunicacao {
@@ -91,6 +91,10 @@ public class MeioDeComunicacao {
       catch (Exception e) {e.printStackTrace();} //Fim de try-catch
 
     } //Fim for fluxoBits[]
+
+    for(int i=0; i < 12; i++){
+      controller.atualizarSinais();
+    }
     
     if (ehACK) {
 

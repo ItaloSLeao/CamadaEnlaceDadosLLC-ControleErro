@@ -13,7 +13,7 @@ import util.Util;
  * e envia para o meio de comunicacao.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaFisicaTransmissora {
@@ -113,8 +113,6 @@ public class CamadaFisicaTransmissora {
       
       codificado[i] = informacao; //Armazena os bits acumulados de 4 caracteres no vetor
 
-      try {Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e) {e.printStackTrace();}
     } //Fim for
 
     return codificado;
@@ -333,8 +331,6 @@ public class CamadaFisicaTransmissora {
    * @param controller  O controlador da interface grafica.
    */
   protected static void camadaFisicaReceptora(int fluxoBits[], ControllerTelaPrincipal controller) {
-    try {Thread.sleep(controller.getVelocidade());} 
-    catch (Exception e) {e.printStackTrace();} //Fim do try-catch
 
     int[] fluxoBitsDecodificar; //Fluxo de bits, possivelmente enquadrado, a ser decodificado
 

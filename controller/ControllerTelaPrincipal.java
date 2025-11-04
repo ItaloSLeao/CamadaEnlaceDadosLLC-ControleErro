@@ -29,8 +29,8 @@ import model.AplicacaoTransmissora;
  * interacoes com os menus.
  *
  * @author Italo de Souza Leao (Matricula: 202410120)
- * @version 20/10/2025 (Ultima alteracao)
- * @since 02/10/2025 (Inicio)
+ * @version 04/11/2025 (Ultima alteracao)
+ * @since   02/10/2025 (Inicio)
  */
 public class ControllerTelaPrincipal implements Initializable {
   @FXML //Notacao de insercao do id FXML

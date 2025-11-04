@@ -10,7 +10,7 @@ import controller.ControllerTelaPrincipal;
  * resultante para a proxima camada da pilha de protocolos, a Camada de Enlace.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaAplicacaoTransmissora {
@@ -29,30 +29,25 @@ public class CamadaAplicacaoTransmissora {
   protected static void camadaAplicacaoTransmissora(String mensagem, ControllerTelaPrincipal controller) {
 
     new Thread(() -> {
-      //Tratamento de excecao, em caso de Thread Interruption
-      try {
-        int quadro[] = new int[mensagem.length()];
-        String textoExibicao;
+      
+      int quadro[] = new int[mensagem.length()];
+      String textoExibicao;
 
-        System.out.println("\nCAMADA DE APLICACAO TRANSMISSORA -------------------");
-        for (int i = 0; i < mensagem.length(); i++) { //Laco que percorre todos os caracteres da mensagem
-          textoExibicao = "";
-          textoExibicao += mensagem.charAt(i);
-          textoExibicao += " = ";
-          quadro[i] = mensagem.charAt(i); //Valor ASCII do caractere i eh adicionado a posicao i do array
-          textoExibicao += quadro[i];
-          textoExibicao += ";";
+      System.out.println("\nCAMADA DE APLICACAO TRANSMISSORA -------------------");
+      for (int i = 0; i < mensagem.length(); i++) { //Laco que percorre todos os caracteres da mensagem
+        textoExibicao = "";
+        textoExibicao += mensagem.charAt(i);
+        textoExibicao += " = ";
+        quadro[i] = mensagem.charAt(i); //Valor ASCII do caractere i eh adicionado a posicao i do array
+        textoExibicao += quadro[i];
+        textoExibicao += ";";
 
-          String textoAtual = textoExibicao; //Armazena o texto construido na string
+        String textoAtual = textoExibicao; //Armazena o texto construido na string
 
-          Thread.sleep(controller.getVelocidade());
-          System.out.println(textoAtual); //Imprime no console a codificacao ascii
-        } //Fim do for da mensagem
+        System.out.println(textoAtual); //Imprime no console a codificacao ascii
+      } //Fim do for da mensagem
 
-        CamadaEnlaceDadosTransmissora.camadaEnlaceDadosTransmissora(quadro, controller);
-      } catch (Exception e) {
-        System.out.println(e.getStackTrace());
-      } //Fim try-catch
+      CamadaEnlaceDadosTransmissora.camadaEnlaceDadosTransmissora(quadro, controller);
       
     }).start(); //Inicializa a thread de transmissao
 

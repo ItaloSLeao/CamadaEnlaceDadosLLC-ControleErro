@@ -16,7 +16,7 @@ import util.Util;
  * erros (este ultimo, ainda nao implementado).
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 16/10/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaEnlaceDadosTransmissora {
@@ -1014,9 +1014,6 @@ public class CamadaEnlaceDadosTransmissora {
       if(!(quadroDesenquadrado == null)){
         System.out.println("quadroDesenquadrado[" + i + "] = " + Util.bitsParaString(quadroDesenquadrado[i]));
       }
-      
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
     } //Fim for
 
     return quadroDesenquadrado;
@@ -1307,9 +1304,6 @@ public class CamadaEnlaceDadosTransmissora {
     if(!(quadroControleErros == null)){
       for(int i = 0; i < quadroControleErros.length; i++){
       System.out.println("quadroControleErros[" + i + "] = " + Util.bitsParaString(quadroControleErros[i]));
-      
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
       } //Fim for      
     }
 

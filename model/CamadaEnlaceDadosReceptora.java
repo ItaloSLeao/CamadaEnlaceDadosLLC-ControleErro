@@ -17,7 +17,7 @@ import util.Util;
  * erros e encaminhar a mensagem para a camada de aplicacao.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 20/10/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaEnlaceDadosReceptora {
@@ -741,9 +741,6 @@ public class CamadaEnlaceDadosReceptora {
         controller.adicionarBitsEnquadradosTextArea(Util.bitsParaString(quadroEnquadrado[i]) + "\n");
         System.out.println("quadroEnquadrado[" + i + "] = " + Util.bitsParaString(quadroEnquadrado[i]));
       }
-      
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
 
     } //Fim for
 
@@ -1010,9 +1007,6 @@ public class CamadaEnlaceDadosReceptora {
     for(int i = 0; i < quadroControleErros.length; i++){
       controller.adicionarBitsEnquadradosTextArea(Util.bitsParaString(quadroControleErros[i]) + "\n");
       System.out.println("quadroControleErros[" + i + "] = " + Util.bitsParaString(quadroControleErros[i]));
-      
-      try{Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e){e.printStackTrace();}
     } //Fim for
 
     return quadroControleErros;

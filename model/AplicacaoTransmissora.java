@@ -10,7 +10,7 @@ import controller.ControllerTelaPrincipal;
  * a CamadaAplicacaoTransmissora, para iniciar a simulacao.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version /10/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class AplicacaoTransmissora {

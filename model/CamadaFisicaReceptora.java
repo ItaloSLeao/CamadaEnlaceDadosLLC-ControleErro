@@ -13,7 +13,7 @@ import java.util.Arrays;
  * desenquadrar e enviar para a camada de enlace de dados receptora.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaFisicaReceptora {
@@ -28,8 +28,6 @@ public class CamadaFisicaReceptora {
    * @param controller  O controlador da interface grafica.
    */
   protected static void camadaFisicaReceptora(int fluxoBits[], ControllerTelaPrincipal controller) {
-    try {Thread.sleep(controller.getVelocidade());} 
-    catch (Exception e) {e.printStackTrace();} //Fim do try-catch
 
     //Verifica se eh ACK antes de processar (ACK tem 1 inteiro de 32 bits = 0x80000000)
     if (fluxoBits != null && fluxoBits.length == 1 && fluxoBits[0] == 0x80000000) {
@@ -439,8 +437,6 @@ public class CamadaFisicaReceptora {
       
       codificado[i] = informacao; //Armazena os bits acumulados de 4 caracteres no vetor
 
-      try {Thread.sleep(controller.getVelocidade());} 
-      catch (Exception e) {e.printStackTrace();}
     } //Fim for
 
     return codificado;

@@ -11,7 +11,7 @@ import controller.ControllerTelaPrincipal;
  * usuario.
  *
  * @author  Italo de Souza Leao (Matricula: 202410120)
- * @version 30/09/2025 (Ultima alteracao)
+ * @version 04/11/2025 (Ultima alteracao)
  * @since   02/10/2025 (Inicio)
  */
 public class CamadaAplicacaoReceptora {
@@ -28,23 +28,17 @@ public class CamadaAplicacaoReceptora {
    * @param controller  O controlador da interface grafica.
    */
   protected static void camadaAplicacaoReceptora(int quadro[], ControllerTelaPrincipal controller) {
+
     String mensagem = ""; //Armazenara a mensagem decodificada
     
     //Loop para processar cada inteiro no array quadro
     for (int i = 0; i < quadro.length; i++) {
-      if (quadro[i] == 0) {break;} //Interrompe o processamento (caracteres ASCII > 0)
-      
+      if (quadro[i] == 0) {break;}
       mensagem += ((char) quadro[i]);
-      
-      try {
-        Thread.sleep(controller.getVelocidade());
-      } catch (Exception e) {
-        e.printStackTrace();
-      } //Fim try-catch
     } //Fim for
     
-    //Nao imprime logs detalhados aqui - apenas exibe a mensagem na interface
     AplicacaoReceptora.aplicacaoReceptora(mensagem, controller); //Chama a aplicacao receptora
+
   } //Fim camadaAplicacaoReceptora
   
 } //Fim da classe CamadaAplicacaoReceptora
